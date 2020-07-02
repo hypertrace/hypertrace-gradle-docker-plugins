@@ -8,7 +8,6 @@ java {
   sourceCompatibility = JavaVersion.VERSION_11
 }
 
-
 gradlePlugin {
   plugins {
     create("gradlePlugin") {
