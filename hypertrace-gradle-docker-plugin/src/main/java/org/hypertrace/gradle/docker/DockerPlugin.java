@@ -30,9 +30,9 @@ public class DockerPlugin implements Plugin<Project> {
   private void configureDockerRegistryCredentials(DockerPluginExtension extension) {
     extension.registryCredentials(
         credentials -> {
-          getEnvironmentVariable("DOCKER_REGISTRY").ifPresent(credentials.getUrl()::set);
-          getEnvironmentVariable("DOCKER_USERNAME").ifPresent(credentials.getUsername()::set);
-          getEnvironmentVariable("DOCKER_PASSWORD").ifPresent(credentials.getPassword()::set);
+          getEnvironmentVariable("DOCKER_REGISTRY").ifPresent(credentials.getUrl()::convention);
+          getEnvironmentVariable("DOCKER_USERNAME").ifPresent(credentials.getUsername()::convention);
+          getEnvironmentVariable("DOCKER_PASSWORD").ifPresent(credentials.getPassword()::convention);
         });
   }
 
