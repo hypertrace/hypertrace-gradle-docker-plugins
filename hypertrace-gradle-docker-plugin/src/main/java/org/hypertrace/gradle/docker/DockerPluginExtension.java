@@ -11,7 +11,7 @@ import org.gradle.api.provider.Property;
 
 public abstract class DockerPluginExtension implements ExtensionAware {
   private static final String DEFAULT_IMAGE_NAME = "default";
-  private static final String DEFAULT_NAMESPACE = "hypertraceorg";
+  private static final String DEFAULT_NAMESPACE = "hypertrace";
   public final NamedDomainObjectContainer<DockerTag> tags;
   public final NamedDomainObjectContainer<DockerImage> images;
   public final DockerRegistryCredentials registryCredentials;

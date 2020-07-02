@@ -1,5 +1,3 @@
-import org.hypertrace.gradle.publishing.License.AGPL_V3
-
 plugins {
   `java-gradle-plugin`
   id("org.hypertrace.publish-plugin")
@@ -9,10 +7,6 @@ plugins {
 java {
   targetCompatibility = JavaVersion.VERSION_11
   sourceCompatibility = JavaVersion.VERSION_11
-}
-
-hypertracePublish {
-  license.set(AGPL_V3)
 }
 
 gradlePlugin {

@@ -1,5 +1,3 @@
-import org.hypertrace.gradle.publishing.License.AGPL_V3
-
 plugins {
   `java-gradle-plugin`
   id("org.hypertrace.publish-plugin")
@@ -18,10 +16,6 @@ gradlePlugin {
       implementationClass = "org.hypertrace.gradle.docker.DockerPlugin"
     }
   }
-}
-
-hypertracePublish {
-  license.set(AGPL_V3)
 }
 
 dependencies {
