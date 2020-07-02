@@ -1,7 +1,6 @@
 plugins {
   `java-gradle-plugin`
   id("org.hypertrace.publish-plugin")
-  id("org.hypertrace.repository-plugin") version "0.1.0"
 }
 
 java {
@@ -19,7 +18,7 @@ gradlePlugin {
 }
 
 dependencies {
-  implementation("com.bmuschko:gradle-docker-plugin:6.4.0")
-  implementation(project(":hypertrace-gradle-docker-plugin"))
+  api("com.bmuschko:gradle-docker-plugin:6.4.0")
+  api(project(":hypertrace-gradle-docker-plugin"))
 }
 
