@@ -2,9 +2,7 @@ pluginManagement {
   repositories {
     mavenLocal()
     gradlePluginPortal()
-    maven {
-      url = uri("https://dl.bintray.com/hypertrace/maven")
-    }
+    maven("https://dl.bintray.com/hypertrace/maven")
   }
 }
 

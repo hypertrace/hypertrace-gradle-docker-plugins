@@ -66,7 +66,7 @@ The following other values can also be set via the `hypertraceDocker` dsl.
  DOCKER_USERNAME or DOCKER_PASSWORD environment variables are set, they will be used as the
  defaullt, overridable by dsl.
 
-- `namespace` - this will prefix any pushed image name, and defaults to `hypertraceorg`.
+- `namespace` - this will prefix any pushed image name, and defaults to `hypertrace`.
  
 
 The full image name is calculated as `[{customRegistry}/][{namespace}/]imageName:tag`
@@ -90,8 +90,8 @@ Output of `gradle tasks`
 ```
 Docker tasks
 ------------
-dockerBuildImage_default - Builds docker image hypertraceorg/example-dockerfile
-dockerBuildImage_secondImage - Builds docker image hypertraceorg/secondImage
+dockerBuildImage_default - Builds docker image hypertrace/example-dockerfile
+dockerBuildImage_secondImage - Builds docker image hypertrace/secondImage
 dockerBuildImages - Builds all registered docker images for this project
 ```
 
