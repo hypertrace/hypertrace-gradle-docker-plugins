@@ -30,17 +30,21 @@ Partial output of `gradle tasks`
 Docker tasks
 ------------
 ...
-dockerPushImage_default_0.3.0 - Pushes docker image hypertrace/example-dockerfile with tag 0.3.0
-dockerPushImage_default_tagForSecondImageOnly - Pushes docker image hypertrace/example-dockerfile with tag tagForSecondImageOnly. Disabled.
-dockerPushImage_secondImage_0.3.0 - Pushes docker image ht2/secondImage with tag 0.3.0
-dockerPushImage_secondImage_tagForSecondImageOnly - Pushes docker image ht2/secondImage with tag tagForSecondImageOnly
+dockerPushImage_default_0.3.0 - Pushes docker image hypertrace/example-dockerfile:0.3.0
+dockerPushImage_default_latest - Pushes docker image hypertrace/example-dockerfile:latest
+dockerPushImage_default_tagForSecondImageOnly - Pushes docker image hypertrace/example-dockerfile:tagForSecondImageOnly. Disabled.
+dockerPushImage_secondImage_0.3.0 - Pushes docker image ht2/secondImage:0.3.0
+dockerPushImage_secondImage_latest - Pushes docker image ht2/secondImage:latest
+dockerPushImage_secondImage_tagForSecondImageOnly - Pushes docker image ht2/secondImage:tagForSecondImageOnly
 dockerPushImages - Pushes all tags for all registered docker images for this project
 ```
 
 Ultimately, the following images would be pushed by running `dockerPushImages`:
 
 - `hypertrace/example-dockerfile:0.3.0`
+- `hypertrace/example-dockerfile:latest`
 - `ht2/secondImage:0.3.0`
+- `ht2/secondImage:latest`
 - `ht2/secondImage:tagForSecondImageOnly`
 
 If the remote registry is set to anything other than the default, dockerhub, it will also be added as

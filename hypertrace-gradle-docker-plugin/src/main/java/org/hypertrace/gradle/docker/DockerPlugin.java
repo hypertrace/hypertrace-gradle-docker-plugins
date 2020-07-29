@@ -19,7 +19,8 @@ public class DockerPlugin implements Plugin<Project> {
 
   @Override
   public void apply(Project target) {
-    target.getPluginManager().apply(DockerRemoteApiPlugin.class);
+    target.getPluginManager()
+          .apply(DockerRemoteApiPlugin.class);
     DockerPluginExtension extension = this.registerExtension(target);
     this.configureDockerRegistryCredentials(extension);
     this.addDockerBuildTasks(target, extension);
@@ -65,15 +66,20 @@ public class DockerPlugin implements Plugin<Project> {
                 DockerBuildImage.class,
                 task -> {
                   task.setGroup(TASK_GROUP);
-                  task.setDescription("Builds docker image " + image.getNamespacedImageName().get());
+
+                  task.setDescription("Builds docker image " + image.getFullImageNameWithoutTag()
+                                                                    .get());
                   task.dependsOn(project.provider(image::getDependsOn));
-                  task.getDockerFile().set(image.dockerFile);
-                  task.getInputDir().set(image.buildContext);
+                  task.getDockerFile()
+                      .set(image.dockerFile);
+                  task.getInputDir()
+                      .set(image.buildContext);
                   task.getImages()
                       .addAll(
                           project.provider(
                               () -> this.getEnabledTagNamesProviderForImage(extension, image)));
-                  task.getBuildArgs().set(image.buildArgs);
+                  task.getBuildArgs()
+                      .set(image.buildArgs);
                   task.onlyIf(image.taskOnlyIf());
                 });
     buildLifecycleTask.configure(lifecycleTask -> lifecycleTask.dependsOn(imageBuildTask));
@@ -81,10 +87,12 @@ public class DockerPlugin implements Plugin<Project> {
 
   private void addDefaultTags(Project project, DockerPluginExtension extension) {
     extension.tag(this.getVersionString(project));
+    extension.tag(DockerTag.LATEST, tag -> tag.onlyIf(unused -> extension.tagLatest.get()));
   }
 
   private String getVersionString(Project project) {
-    return project.getVersion().toString();
+    return project.getVersion()
+                  .toString();
   }
 
   private DockerPluginExtension registerExtension(Project project) {
@@ -93,27 +101,33 @@ public class DockerPlugin implements Plugin<Project> {
         .create(
             EXTENSION_NAME,
             DockerPluginExtension.class,
-            project.getExtensions().getByType(DockerExtension.class).getRegistryCredentials());
+            project.getExtensions()
+                   .getByType(DockerExtension.class)
+                   .getRegistryCredentials());
   }
 
   private Set<String> getEnabledTagNamesProviderForImage(
       DockerPluginExtension extension, DockerImage image) {
-    return extension.enabledTagsForImage(image).stream()
-        .map(image::getFullImageNameWithTag)
-        .map(Provider::get)
-        .collect(Collectors.toSet());
+    return extension.enabledTagsForImage(image)
+                    .stream()
+                    .map(image::getFullImageNameWithTag)
+                    .map(Provider::get)
+                    .collect(Collectors.toSet());
   }
 
   private void setDefaultImage(Project project, DockerPluginExtension extension) {
     extension.defaultImage(
         image -> {
           image.dockerFile.convention(
-              project.provider(() -> project.getLayout().getProjectDirectory().file("Dockerfile")));
+              project.provider(() -> project.getLayout()
+                                            .getProjectDirectory()
+                                            .file("Dockerfile")));
           image.imageName.convention(project.provider(project::getName));
         });
   }
 
   private Optional<String> getEnvironmentVariable(String variableName) {
-    return Optional.ofNullable(System.getenv().get(variableName));
+    return Optional.ofNullable(System.getenv()
+                                     .get(variableName));
   }
 }

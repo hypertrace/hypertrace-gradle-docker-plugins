@@ -8,6 +8,7 @@ import org.gradle.api.specs.Spec;
 
 public class DockerTag implements Named {
 
+  public static final String LATEST = "latest";
   private final String name;
   private AndSpec<DockerImage> onlyIfSpec = AndSpec.empty();
 
