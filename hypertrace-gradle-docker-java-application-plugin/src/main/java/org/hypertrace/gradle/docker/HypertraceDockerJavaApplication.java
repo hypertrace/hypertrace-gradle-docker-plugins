@@ -15,7 +15,7 @@ public class HypertraceDockerJavaApplication {
   @Inject
   public HypertraceDockerJavaApplication(
       ObjectFactory objectFactory, ProviderFactory providerFactory, JavaApplication application) {
-    this.baseImage = objectFactory.property(String.class).convention("gcr.io/distroless/java:11");
+    this.baseImage = objectFactory.property(String.class).convention("gcr.io/distroless/java:11-debug");
     this.mainClassName =
         objectFactory
             .property(String.class)
