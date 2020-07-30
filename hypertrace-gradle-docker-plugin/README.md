@@ -19,6 +19,7 @@ Each image can be configured with:
  - Build Args: Map of Custom arguments (String/String) for docker build. Defaults to empty.
  - onlyIf: Disable image based on certain rules
  - dependsOn: Dependency tasks to run before building the image.
+ - tagNameTransform: How to map a tag string from a tag object. Defaults to tag.getName()
     
 By default, there is a single image registered, looking for a file named `Dockerfile` with an image name `${project.name}`.
 This image is accessible in the DSL via `defaultImage()`
@@ -43,8 +44,9 @@ Each tag can be configured with:
 - Name (required): The actual value of the tag
 - onlyIf: Disable tag based on rules. This spec will be run for each image, providing it as an argument
 
-By default, one tag is registered:
+By default, two tags are registered:
 - `${project.version()}`
+- `latest` - onlyIf `hypertraceDocker.tagLatest` - see below for more information
 
 Tags are registered in the build DSL:
 ```kotlin
@@ -68,6 +70,7 @@ The following other values can also be set via the `hypertraceDocker` dsl.
 
 - `namespace` - this will prefix any pushed image name, and defaults to `hypertrace`.
  
+- `tagLatest` - if true, adds a latest tag to each image in addition to other tags (defaults to `true`)
 
 The full image name is calculated as `[{customRegistry}/][{namespace}/]imageName:tag`
 

@@ -10,6 +10,8 @@ import org.gradle.api.Project;
 import org.gradle.api.plugins.ApplicationPlugin;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.JavaApplication;
+import org.gradle.api.tasks.Copy;
+import org.gradle.api.tasks.TaskProvider;
 
 public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
   public static final String EXTENSION_NAME = "javaApplication";
@@ -21,6 +23,7 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
     target.getPluginManager().apply(DockerPlugin.class);
     this.addApplicationExtension(target);
     this.updateDefaultPublication(target);
+    this.addAnyVariants(target);
   }
 
   private void addApplicationExtension(Project project) {
@@ -87,7 +90,45 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
     return project.getExtensions().getByType(DockerPluginExtension.class);
   }
 
+  private HypertraceDockerJavaApplication getHypertraceDockerApplicationExtension(Project project) {
+    return this.getHypertraceDockerExtension(project)
+               .getExtensions()
+               .getByType(HypertraceDockerJavaApplication.class);
+  }
+
   private JavaApplication getJavaApplication(Project project) {
     return project.getExtensions().getByType(JavaApplication.class);
+  }
+
+  private void addAnyVariants(Project project) {
+    DockerImage base = this.getHypertraceDockerExtension(project)
+                           .defaultImage();
+    this.getHypertraceDockerApplicationExtension(project)
+        .variants
+        .all(variant -> this.addVariant(project, base, variant));
+
+  }
+
+  private void addVariant(Project project, DockerImage base, DockerImageVariant variant) {
+    this.getHypertraceDockerExtension(project)
+        .image(base.getName() + "-" + variant.getName(), image -> {
+          var dockerFileTask = this.createModifiedDockerfileTask(project, base, variant);
+          image.imageName.set(base.imageName);
+          image.dockerFile.set(project.file(base.dockerFile.getAsFile()
+                                                           .map(file -> file.getAbsolutePath() + "." + variant.getName())));
+          image.setTagNameTransform(tag -> tag.getName() + "-" + variant.getName());
+          image.dependsOn(dockerFileTask);
+        });
+  }
+
+  private TaskProvider<?> createModifiedDockerfileTask(Project project, DockerImage base, DockerImageVariant variant) {
+    return project.getTasks()
+                  .register("createDockerfileVariant_" + variant.getName(), Copy.class, copy -> {
+                    copy.dependsOn(base.getDependsOn());
+                    copy.from(base.dockerFile);
+                    copy.into("build/docker");
+                    copy.rename(name -> name + "." + variant.getName());
+                    copy.filter(line -> line.replaceAll(variant.javaApplication.baseImage.get(), variant.baseImage.get()));
+                  });
   }
 }

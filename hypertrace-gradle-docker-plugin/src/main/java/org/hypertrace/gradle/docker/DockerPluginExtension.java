@@ -16,12 +16,14 @@ public abstract class DockerPluginExtension implements ExtensionAware {
   public final NamedDomainObjectContainer<DockerImage> images;
   public final DockerRegistryCredentials registryCredentials;
   public final Property<String> namespace;
+  public final Property<Boolean> tagLatest;
 
   @Inject
   public DockerPluginExtension(ObjectFactory objectFactory, DockerRegistryCredentials registryCredentials) {
     this.namespace = objectFactory.property(String.class)
             .convention(DEFAULT_NAMESPACE);
     this.tags = objectFactory.domainObjectContainer(DockerTag.class);
+    this.tagLatest = objectFactory.property(Boolean.class).convention(true);
     this.registryCredentials = registryCredentials;
     this.images = objectFactory.domainObjectContainer(DockerImage.class, name -> objectFactory.newInstance(DockerImage.class, name, this));
   }
