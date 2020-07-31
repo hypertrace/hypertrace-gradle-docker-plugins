@@ -9,3 +9,7 @@
 ### Changed
 - Added support for producing multiple variants of an application with different base images
 - Added a default variant, `slim` based off `gcr.io/distroless/java:11`
+
+## [0.3.2]
+### Changed
+- Removed default `slim` variant
