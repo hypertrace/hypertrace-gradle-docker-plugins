@@ -112,7 +112,7 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
   private void addVariant(Project project, DockerImage base, DockerImageVariant variant) {
     this.getHypertraceDockerExtension(project)
         .image(base.getName() + "-" + variant.getName(), image -> {
-          var dockerFileTask = this.createModifiedDockerfileTask(project, base, variant);
+          TaskProvider<?> dockerFileTask = this.createModifiedDockerfileTask(project, base, variant);
           image.imageName.set(base.imageName);
           image.dockerFile.set(project.file(base.dockerFile.getAsFile()
                                                            .map(file -> file.getAbsolutePath() + "." + variant.getName())));

@@ -13,3 +13,7 @@
 ## [0.3.2]
 ### Changed
 - Removed default `slim` variant
+
+## [0.3.3]
+### Changed
+- Support Java 8+
