@@ -18,7 +18,7 @@ public class HypertraceDockerJavaApplication {
   public HypertraceDockerJavaApplication(
       ObjectFactory objectFactory, ProviderFactory providerFactory, JavaApplication application) {
     this.baseImage = objectFactory.property(String.class)
-                                  .convention("gcr.io/distroless/java:11-debug");
+                                  .convention("hypertrace/java:11");
     this.variants = objectFactory.domainObjectContainer(DockerImageVariant.class,
         name -> objectFactory.newInstance(DockerImageVariant.class, name, this));
     this.mainClassName =
