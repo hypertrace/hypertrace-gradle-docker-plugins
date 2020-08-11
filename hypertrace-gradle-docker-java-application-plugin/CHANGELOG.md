@@ -17,3 +17,7 @@
 ## [0.3.3]
 ### Changed
 - Support Java 8+
+
+## [0.4.0]
+### Changed
+- Change default image to `hypertrace/java:11`
