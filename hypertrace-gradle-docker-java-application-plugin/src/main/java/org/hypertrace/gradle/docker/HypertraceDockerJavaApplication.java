@@ -59,11 +59,14 @@ public class HypertraceDockerJavaApplication {
                          .set(this.mainClassName);
     dockerJavaApplication.getMaintainer()
                          .set(this.maintainer);
+    // adding a missing provider clears the ports, which we don't want. Convert it to a list and add all
     dockerJavaApplication.getPorts()
                          .empty()
-                         .add(this.port);
+                         .addAll(this.port.map(Collections::singletonList)
+                                          .orElse(Collections.emptyList()));
     dockerJavaApplication.getPorts()
-                         .add(this.adminPort);
+                         .addAll(this.adminPort.map(Collections::singletonList)
+                                               .orElse(Collections.emptyList()));
     dockerfileTaskProvider.configure(dockerfile -> {
       dockerfile.instruction(this.healthCheck);
       dockerfile.environmentVariable(this.envVars);
