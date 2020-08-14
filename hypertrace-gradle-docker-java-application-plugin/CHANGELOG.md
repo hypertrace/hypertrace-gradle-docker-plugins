@@ -21,3 +21,13 @@
 ## [0.4.0]
 ### Changed
 - Change default image to `hypertrace/java:11`
+
+## [0.5.0]
+### Changed
+- Exposed for configuration:
+    - `maintainer`
+    - `port`
+    - `adminPort`
+    - `serviceName`
+    - `healthCheck`
+    - `envVars`

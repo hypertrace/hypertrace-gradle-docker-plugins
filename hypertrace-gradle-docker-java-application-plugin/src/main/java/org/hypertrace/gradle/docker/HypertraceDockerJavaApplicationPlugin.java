@@ -18,9 +18,12 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
 
   @Override
   public void apply(Project target) {
-    target.getPluginManager().apply(ApplicationPlugin.class);
-    target.getPluginManager().apply(DockerJavaApplicationPlugin.class);
-    target.getPluginManager().apply(DockerPlugin.class);
+    target.getPluginManager()
+          .apply(ApplicationPlugin.class);
+    target.getPluginManager()
+          .apply(DockerJavaApplicationPlugin.class);
+    target.getPluginManager()
+          .apply(DockerPlugin.class);
     this.addApplicationExtension(target);
     this.updateDefaultPublication(target);
     this.addAnyVariants(target);
@@ -30,8 +33,8 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
     this.getHypertraceDockerExtension(project)
         .getExtensions()
         .create(
-            EXTENSION_NAME, HypertraceDockerJavaApplication.class, this.getJavaApplication(project))
-        .configureDockerJavaApplication(this.getThirdPartyDockerJavaApp(project));
+            EXTENSION_NAME, HypertraceDockerJavaApplication.class, this.getJavaApplication(project), project.getName())
+        .configureDockerJavaApplication(this.getThirdPartyDockerJavaApp(project), this.getDockerfileTaskProvider(project));
   }
 
   private void updateDefaultPublication(Project project) {
@@ -55,12 +58,15 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
                   DockerJavaApplicationPlugin.PUSH_IMAGE_TASK_NAME,
                   DockerJavaApplicationPlugin.PUSH_IMAGE_TASK_NAME
                       + " is not supported. To push this image, please apply the plugin org.hypertrace.docker-publish-plugin, and view the push tasks it provides");
-              image.dockerFile.set(
-                  project
-                      .getTasks()
-                      .named(DockerJavaApplicationPlugin.DOCKERFILE_TASK_NAME, Dockerfile.class)
-                      .flatMap(Dockerfile::getDestFile));
+              image.dockerFile.set(this.getDockerfileTaskProvider(project)
+                                       .flatMap(Dockerfile::getDestFile));
             });
+  }
+
+  private TaskProvider<Dockerfile> getDockerfileTaskProvider(Project project) {
+    return project
+        .getTasks()
+        .named(DockerJavaApplicationPlugin.DOCKERFILE_TASK_NAME, Dockerfile.class);
   }
 
   private void hideTask(Project project, String taskName, String onUsageMessage) {
@@ -81,13 +87,15 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
   }
 
   private DockerJavaApplication getThirdPartyDockerJavaApp(Project project) {
-    return ((ExtensionAware) project.getExtensions().getByType(DockerExtension.class))
+    return ((ExtensionAware) project.getExtensions()
+                                    .getByType(DockerExtension.class))
         .getExtensions()
         .getByType(DockerJavaApplication.class);
   }
 
   private DockerPluginExtension getHypertraceDockerExtension(Project project) {
-    return project.getExtensions().getByType(DockerPluginExtension.class);
+    return project.getExtensions()
+                  .getByType(DockerPluginExtension.class);
   }
 
   private HypertraceDockerJavaApplication getHypertraceDockerApplicationExtension(Project project) {
@@ -97,7 +105,8 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
   }
 
   private JavaApplication getJavaApplication(Project project) {
-    return project.getExtensions().getByType(JavaApplication.class);
+    return project.getExtensions()
+                  .getByType(JavaApplication.class);
   }
 
   private void addAnyVariants(Project project) {
