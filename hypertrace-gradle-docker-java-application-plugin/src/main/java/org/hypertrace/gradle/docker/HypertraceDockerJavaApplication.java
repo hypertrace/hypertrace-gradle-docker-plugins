@@ -43,7 +43,7 @@ public class HypertraceDockerJavaApplication {
 
     this.healthCheck = objectFactory.property(String.class)
                                     .convention(this.adminPort.map(adminPort -> String.format(
-                                        "HEALTHCHECK -interval=2s --start-period=15s --timeout=2s CMD wget -qO- http://127.0.0.1:%d/health &> /dev/null || exit 1", adminPort)));
+                                        "HEALTHCHECK --interval=2s --start-period=15s --timeout=2s CMD wget -qO- http://127.0.0.1:%d/health &> /dev/null || exit 1", adminPort)));
     this.variants = objectFactory.domainObjectContainer(DockerImageVariant.class,
         name -> objectFactory.newInstance(DockerImageVariant.class, name, this));
     this.mainClassName =
