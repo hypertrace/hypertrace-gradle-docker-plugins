@@ -86,13 +86,27 @@ public class DockerPlugin implements Plugin<Project> {
   }
 
   private void addDefaultTags(Project project, DockerPluginExtension extension) {
-    extension.tag(this.getVersionString(project));
-    extension.tag(DockerTag.LATEST, tag -> tag.onlyIf(unused -> extension.tagLatest.get()));
+    if (this.isReleaseVersion(project)) {
+      extension.tag(this.getVersionString(project));
+      extension.tag(DockerTag.LATEST, tag -> tag.onlyIf(unused -> extension.tagLatest.get()));
+    }
+    extension.tag(this.getBranchTag());
   }
 
   private String getVersionString(Project project) {
     return project.getVersion()
                   .toString();
+  }
+
+  private boolean isReleaseVersion(Project project) {
+    return !this.getVersionString(project)
+                .contains("SNAPSHOT");
+  }
+
+  private String getBranchTag() {
+    // Use the value of CIRCLE_BRANCH environment variable if defined (that is, the branch name used
+    // to build in CI), otherwise for local builds use 'test'
+    return getEnvironmentVariable("CIRCLE_BRANCH").orElse("test");
   }
 
   private DockerPluginExtension registerExtension(Project project) {
