@@ -14,3 +14,7 @@
 ### Changed
 - Only use version tags for release versions (not containing the string `SNAPSHOT`). For all builds,
 tag using the `CIRCLE_BRANCH` env variable if defined, else `test`
+
+## [0.6.1]
+### Fixed
+- Disregard empty values for `CIRCLE_BRANCH` and only use branch name for non-release versions
