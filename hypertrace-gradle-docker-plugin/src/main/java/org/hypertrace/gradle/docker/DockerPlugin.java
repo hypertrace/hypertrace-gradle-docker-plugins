@@ -109,7 +109,7 @@ public class DockerPlugin implements Plugin<Project> {
     // to build in CI), otherwise for local builds use 'test'
     return getEnvironmentVariable("CIRCLE_BRANCH")
         .map(String::trim)
-        .map(branch -> branch.replaceAll("[^A-Za-z0-9._-]", ""))
+        .map(branch -> branch.replaceAll("[^A-Za-z0-9\\.\\_\\-]", ""))
         .filter(branch -> !branch.isEmpty())
         .orElse("test");
   }
