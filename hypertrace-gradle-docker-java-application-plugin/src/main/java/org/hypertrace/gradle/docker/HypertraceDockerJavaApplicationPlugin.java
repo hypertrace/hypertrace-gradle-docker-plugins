@@ -1,6 +1,8 @@
 package org.hypertrace.gradle.docker;
 
+import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
+import static java.util.Objects.requireNonNull;
 import static org.gradle.api.plugins.JavaPlugin.CLASSES_TASK_NAME;
 import static org.gradle.api.plugins.JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME;
 
@@ -8,9 +10,10 @@ import com.bmuschko.gradle.docker.tasks.image.Dockerfile;
 import com.bmuschko.gradle.docker.tasks.image.Dockerfile.CopyFile;
 import com.bmuschko.gradle.docker.tasks.image.Dockerfile.From;
 import java.io.File;
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -20,20 +23,23 @@ import org.gradle.api.plugins.ApplicationPlugin;
 import org.gradle.api.plugins.JavaApplication;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.resources.TextResource;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetOutput;
 import org.gradle.api.tasks.Sync;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.application.CreateStartScripts;
+import org.gradle.jvm.application.scripts.TemplateBasedScriptGenerator;
 
 public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
   public static final String EXTENSION_NAME = "javaApplication";
   public static final String DOCKERFILE_TASK_NAME = "generateJavaApplicationDockerfile";
   public static final String DOCKER_START_SCRIPT_TASK_NAME = "generateJavaApplicationDockerStartScript";
   public static final String SYNC_BUILD_CONTEXT_TASK_NAME = "syncJavaApplicationDockerContext";
-  private static final String DOCKER_BUILD_CONTEXT_LIB_DIR = "lib";
+  private static final String DOCKER_BUILD_CONTEXT_LIBS_DIR = "libs";
   private static final String DOCKER_BUILD_CONTEXT_CLASSES_DIR = "classes";
   private static final String DOCKER_BUILD_CONTEXT_RESOURCES_DIR = "resources";
+  private static final String DOCKER_BUILD_CONTEXT_SCRIPTS_DIR = "scripts";
 
   @Override
   public void apply(Project target) {
@@ -102,18 +108,17 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
              dockerfile.from(javaApplication.baseImage.map(From::new));
              dockerfile.label(javaApplication.maintainer.map(maintainer -> singletonMap("maintainer", maintainer)));
              dockerfile.workingDir("/app");
-             // Classpath is relativized to be contained inside lib, so all files must be copied there
+             dockerfile.copyFile(relativeScriptPath.map(relativePath -> new CopyFile(relativePath, "run")));
              dockerfile.copyFile(provideIfDirectoryExists(dockerfile.getDestDir()
-                                                                    .map(dir -> dir.dir(DOCKER_BUILD_CONTEXT_LIB_DIR)))
-                 .map(unused -> new CopyFile(DOCKER_BUILD_CONTEXT_LIB_DIR, "lib/")));
-             dockerfile.copyFile(relativeScriptPath.map(relativePath -> new CopyFile(relativePath, "scripts/")));
+                                                                    .map(dir -> dir.dir(DOCKER_BUILD_CONTEXT_LIBS_DIR)))
+                 .map(unused -> new CopyFile(DOCKER_BUILD_CONTEXT_LIBS_DIR, DOCKER_BUILD_CONTEXT_LIBS_DIR)));
              dockerfile.copyFile(provideIfDirectoryExists(dockerfile.getDestDir()
                                                                     .map(dir -> dir.dir(DOCKER_BUILD_CONTEXT_RESOURCES_DIR)))
-                 .map(unused -> new CopyFile(DOCKER_BUILD_CONTEXT_RESOURCES_DIR, "lib/resources")));
-             dockerfile.copyFile(new CopyFile(DOCKER_BUILD_CONTEXT_CLASSES_DIR, "lib/classes"));
+                 .map(unused -> new CopyFile(DOCKER_BUILD_CONTEXT_RESOURCES_DIR, DOCKER_BUILD_CONTEXT_RESOURCES_DIR)));
+             dockerfile.copyFile(new CopyFile(DOCKER_BUILD_CONTEXT_CLASSES_DIR, DOCKER_BUILD_CONTEXT_CLASSES_DIR));
              dockerfile.instruction(javaApplication.healthCheck);
              dockerfile.environmentVariable(javaApplication.envVars);
-             dockerfile.entryPoint(relativeScriptPath.map(path -> Arrays.asList("sh", path)));
+             dockerfile.entryPoint("./run");
              dockerfile.exposePort(project.provider(() -> {
                List<Integer> ports = new ArrayList<>();
                if (javaApplication.port.isPresent()) {
@@ -130,6 +135,7 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
   private void createDockerStartScriptTask(Project project) {
     project.getTasks()
            .register(DOCKER_START_SCRIPT_TASK_NAME, CreateStartScripts.class, startScript -> {
+             ((TemplateBasedScriptGenerator) startScript.getUnixStartScriptGenerator()).setTemplate(this.getStartScriptTemplate(project));
              startScript.setGroup(DockerPlugin.TASK_GROUP);
              startScript.setDescription("Creates a startup script for use by the docker container");
              startScript.mustRunAfter(SYNC_BUILD_CONTEXT_TASK_NAME);
@@ -140,17 +146,11 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
                                            .get();
              JavaApplication javaApplication = project.getExtensions()
                                                       .getByType(JavaApplication.class);
-             startScript.setClasspath(project.files(contextDir.dir(DOCKER_BUILD_CONTEXT_CLASSES_DIR))
-                                             .plus(
-                                                 project.files(contextDir.dir(DOCKER_BUILD_CONTEXT_RESOURCES_DIR)))
-                                             .plus(this.getRuntimeClasspath(project))
-             );
              startScript.getMainClass()
                         .set(javaApplication.getMainClass());
              startScript.setApplicationName(javaApplication.getApplicationName());
-             startScript.setOutputDir(contextDir.file("scripts")
+             startScript.setOutputDir(contextDir.file(DOCKER_BUILD_CONTEXT_SCRIPTS_DIR)
                                                 .getAsFile());
-             startScript.setExecutableDir(javaApplication.getExecutableDir());
              startScript.setDefaultJvmOpts(javaApplication.getApplicationDefaultJvmArgs());
            });
   }
@@ -165,7 +165,7 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
                            .map(Dockerfile::getDestDir)
                            .get());
              sync.with(project.copySpec(spec -> {
-               spec.into(DOCKER_BUILD_CONTEXT_LIB_DIR, childSpec -> childSpec.from(getRuntimeClasspath(project)));
+               spec.into(DOCKER_BUILD_CONTEXT_LIBS_DIR, childSpec -> childSpec.from(getRuntimeClasspath(project)));
                spec.into(DOCKER_BUILD_CONTEXT_CLASSES_DIR, childSpec -> childSpec.from(mainSourceSetOutput(project).getClassesDirs()));
                spec.into(DOCKER_BUILD_CONTEXT_RESOURCES_DIR, childSpec -> childSpec.from(mainSourceSetOutput(project).getResourcesDir()));
              }));
@@ -188,5 +188,13 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
   private Provider<File> provideIfDirectoryExists(Provider<Directory> directoryProvider) {
     return directoryProvider.map(directory -> directory.getAsFile()
                                                        .isDirectory() ? directory.getAsFile() : null);
+  }
+
+  private TextResource getStartScriptTemplate(Project project) {
+    URL resourceUrl = HypertraceDockerJavaApplicationPlugin.class.getClassLoader()
+                                                                 .getResource("application-start-script.template.sh");
+    return project.getResources()
+                  .getText()
+                  .fromUri(requireNonNull(resourceUrl));
   }
 }
