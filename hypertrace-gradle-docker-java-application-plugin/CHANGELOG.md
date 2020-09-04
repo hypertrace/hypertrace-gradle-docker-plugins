@@ -31,3 +31,9 @@
     - `serviceName`
     - `healthCheck`
     - `envVars`
+## [0.7.0]
+### Changed
+- Remove variants
+- Remove internal usage of `com.bmuschko.docker-java-application`, cleaning up ghost tasks
+- Use gradle application start script to run application in docker, allowing reuse and accounting
+  for env vars like JAVA_OPTS
