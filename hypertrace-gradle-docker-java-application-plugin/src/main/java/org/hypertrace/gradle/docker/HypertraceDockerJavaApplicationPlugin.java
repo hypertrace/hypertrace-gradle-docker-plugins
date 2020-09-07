@@ -1,96 +1,73 @@
 package org.hypertrace.gradle.docker;
 
-import com.bmuschko.gradle.docker.DockerExtension;
-import com.bmuschko.gradle.docker.DockerJavaApplication;
-import com.bmuschko.gradle.docker.DockerJavaApplicationPlugin;
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
+import static java.util.Objects.requireNonNull;
+import static org.gradle.api.plugins.JavaPlugin.CLASSES_TASK_NAME;
+import static org.gradle.api.plugins.JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME;
+
 import com.bmuschko.gradle.docker.tasks.image.Dockerfile;
-import org.gradle.api.GradleException;
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile.CopyFile;
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile.From;
+import java.io.File;
+import java.net.URL;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.file.Directory;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.ApplicationPlugin;
-import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.JavaApplication;
-import org.gradle.api.tasks.Copy;
+import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.provider.Provider;
+import org.gradle.api.resources.TextResource;
+import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.SourceSetOutput;
+import org.gradle.api.tasks.Sync;
 import org.gradle.api.tasks.TaskProvider;
+import org.gradle.api.tasks.application.CreateStartScripts;
+import org.gradle.jvm.application.scripts.TemplateBasedScriptGenerator;
 
 public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
   public static final String EXTENSION_NAME = "javaApplication";
+  public static final String DOCKERFILE_TASK_NAME = "generateJavaApplicationDockerfile";
+  public static final String DOCKER_START_SCRIPT_TASK_NAME = "generateJavaApplicationDockerStartScript";
+  public static final String SYNC_BUILD_CONTEXT_TASK_NAME = "syncJavaApplicationDockerContext";
+  private static final String DOCKER_BUILD_CONTEXT_LIBS_DIR = "libs";
+  private static final String DOCKER_BUILD_CONTEXT_CLASSES_DIR = "classes";
+  private static final String DOCKER_BUILD_CONTEXT_RESOURCES_DIR = "resources";
+  private static final String DOCKER_BUILD_CONTEXT_SCRIPTS_DIR = "scripts";
 
   @Override
   public void apply(Project target) {
     target.getPluginManager()
           .apply(ApplicationPlugin.class);
     target.getPluginManager()
-          .apply(DockerJavaApplicationPlugin.class);
-    target.getPluginManager()
           .apply(DockerPlugin.class);
     this.addApplicationExtension(target);
+    this.createDockerfileTask(target, this.getHypertraceDockerApplicationExtension(target));
+    this.createDockerStartScriptTask(target);
+    this.createContextSyncTask(target);
     this.updateDefaultPublication(target);
-    this.addAnyVariants(target);
   }
 
   private void addApplicationExtension(Project project) {
     this.getHypertraceDockerExtension(project)
         .getExtensions()
-        .create(
-            EXTENSION_NAME, HypertraceDockerJavaApplication.class, this.getJavaApplication(project), project.getName())
-        .configureDockerJavaApplication(this.getThirdPartyDockerJavaApp(project), this.getDockerfileTaskProvider(project));
+        .create(EXTENSION_NAME, HypertraceDockerJavaApplication.class, project.getName());
   }
 
   private void updateDefaultPublication(Project project) {
     this.getHypertraceDockerExtension(project)
         .defaultImage(
             image -> {
-              image.dependsOn(DockerJavaApplicationPlugin.DOCKERFILE_TASK_NAME);
-              // We want to use the first half of their build chain, then take over ourselves for
-              // build and push. Hide the built in ones.
-              this.hideTask(
-                  project,
-                  DockerJavaApplicationPlugin.BUILD_IMAGE_TASK_NAME,
-                  DockerJavaApplicationPlugin.BUILD_IMAGE_TASK_NAME
-                      + " is not supported. To build the default image only use "
-                      + image.getBuildTaskName()
-                      + ", or to build all images, use "
-                      + DockerPlugin.BUILD_IMAGE_LIFECYCLE_TASK_NAME);
-
-              this.hideTask(
-                  project,
-                  DockerJavaApplicationPlugin.PUSH_IMAGE_TASK_NAME,
-                  DockerJavaApplicationPlugin.PUSH_IMAGE_TASK_NAME
-                      + " is not supported. To push this image, please apply the plugin org.hypertrace.docker-publish-plugin, and view the push tasks it provides");
-              image.dockerFile.set(this.getDockerfileTaskProvider(project)
-                                       .flatMap(Dockerfile::getDestFile));
+              TaskProvider<Dockerfile> dockerfileTaskProvider = this.getDockerfileTask(project);
+              image.dependsOn(dockerfileTaskProvider);
+              image.dockerFile.set(dockerfileTaskProvider.flatMap(Dockerfile::getDestFile));
             });
-  }
-
-  private TaskProvider<Dockerfile> getDockerfileTaskProvider(Project project) {
-    return project
-        .getTasks()
-        .named(DockerJavaApplicationPlugin.DOCKERFILE_TASK_NAME, Dockerfile.class);
-  }
-
-  private void hideTask(Project project, String taskName, String onUsageMessage) {
-    // "Hides" the provided task name. Gradle doesn't support removing existing tasks, so we'll
-    // disable it and document.
-    project
-        .getTasks()
-        .named(taskName)
-        .configure(
-            task -> {
-              task.doFirst(
-                  t -> {
-                    throw new GradleException(onUsageMessage);
-                  });
-              task.setGroup(null);
-              task.setDescription("Not supported");
-            });
-  }
-
-  private DockerJavaApplication getThirdPartyDockerJavaApp(Project project) {
-    return ((ExtensionAware) project.getExtensions()
-                                    .getByType(DockerExtension.class))
-        .getExtensions()
-        .getByType(DockerJavaApplication.class);
   }
 
   private DockerPluginExtension getHypertraceDockerExtension(Project project) {
@@ -104,40 +81,120 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
                .getByType(HypertraceDockerJavaApplication.class);
   }
 
-  private JavaApplication getJavaApplication(Project project) {
-    return project.getExtensions()
-                  .getByType(JavaApplication.class);
-  }
-
-  private void addAnyVariants(Project project) {
-    DockerImage base = this.getHypertraceDockerExtension(project)
-                           .defaultImage();
-    this.getHypertraceDockerApplicationExtension(project)
-        .variants
-        .all(variant -> this.addVariant(project, base, variant));
-
-  }
-
-  private void addVariant(Project project, DockerImage base, DockerImageVariant variant) {
-    this.getHypertraceDockerExtension(project)
-        .image(base.getName() + "-" + variant.getName(), image -> {
-          TaskProvider<?> dockerFileTask = this.createModifiedDockerfileTask(project, base, variant);
-          image.imageName.set(base.imageName);
-          image.dockerFile.set(project.file(base.dockerFile.getAsFile()
-                                                           .map(file -> file.getAbsolutePath() + "." + variant.getName())));
-          image.setTagNameTransform(tag -> tag.getName() + "-" + variant.getName());
-          image.dependsOn(dockerFileTask);
-        });
-  }
-
-  private TaskProvider<?> createModifiedDockerfileTask(Project project, DockerImage base, DockerImageVariant variant) {
+  private TaskProvider<CreateStartScripts> getStartScriptTask(Project project) {
     return project.getTasks()
-                  .register("createDockerfileVariant_" + variant.getName(), Copy.class, copy -> {
-                    copy.dependsOn(base.getDependsOn());
-                    copy.from(base.dockerFile);
-                    copy.into("build/docker");
-                    copy.rename(name -> name + "." + variant.getName());
-                    copy.filter(line -> line.replaceAll(variant.javaApplication.baseImage.get(), variant.baseImage.get()));
-                  });
+                  .named(DOCKER_START_SCRIPT_TASK_NAME, CreateStartScripts.class);
+  }
+
+  private TaskProvider<Dockerfile> getDockerfileTask(Project project) {
+    return project.getTasks()
+                  .named(DOCKERFILE_TASK_NAME, Dockerfile.class);
+  }
+
+  void createDockerfileTask(Project project, HypertraceDockerJavaApplication javaApplication) {
+    project.getTasks()
+           .register(DOCKERFILE_TASK_NAME, Dockerfile.class, dockerfile -> {
+             Provider<String> relativeScriptPath = dockerfile.getDestDir()
+                                                             .map(Directory::getAsFile)
+                                                             .map(File::toPath)
+                                                             .flatMap(contextPath -> this.getStartScriptTask(project)
+                                                                                         .map(CreateStartScripts::getUnixScript)
+                                                                                         .map(File::toPath)
+                                                                                         .map(contextPath::relativize)
+                                                                                         .map(Path::toString));
+             dockerfile.dependsOn(this.getStartScriptTask(project), SYNC_BUILD_CONTEXT_TASK_NAME);
+             dockerfile.setGroup(DockerPlugin.TASK_GROUP);
+             dockerfile.setDescription("Creates a Dockerfile for the java application");
+             dockerfile.from(javaApplication.baseImage.map(From::new));
+             dockerfile.label(javaApplication.maintainer.map(maintainer -> singletonMap("maintainer", maintainer)));
+             dockerfile.workingDir("/app");
+             dockerfile.copyFile(relativeScriptPath.map(relativePath -> new CopyFile(relativePath, "run")));
+             dockerfile.copyFile(provideIfDirectoryExists(dockerfile.getDestDir()
+                                                                    .map(dir -> dir.dir(DOCKER_BUILD_CONTEXT_LIBS_DIR)))
+                 .map(unused -> new CopyFile(DOCKER_BUILD_CONTEXT_LIBS_DIR, DOCKER_BUILD_CONTEXT_LIBS_DIR)));
+             dockerfile.copyFile(provideIfDirectoryExists(dockerfile.getDestDir()
+                                                                    .map(dir -> dir.dir(DOCKER_BUILD_CONTEXT_RESOURCES_DIR)))
+                 .map(unused -> new CopyFile(DOCKER_BUILD_CONTEXT_RESOURCES_DIR, DOCKER_BUILD_CONTEXT_RESOURCES_DIR)));
+             dockerfile.copyFile(new CopyFile(DOCKER_BUILD_CONTEXT_CLASSES_DIR, DOCKER_BUILD_CONTEXT_CLASSES_DIR));
+             dockerfile.instruction(javaApplication.healthCheck);
+             dockerfile.environmentVariable(javaApplication.envVars);
+             dockerfile.entryPoint("./run");
+             dockerfile.exposePort(project.provider(() -> {
+               List<Integer> ports = new ArrayList<>();
+               if (javaApplication.port.isPresent()) {
+                 ports.add(javaApplication.port.get());
+               }
+               if (javaApplication.adminPort.isPresent()) {
+                 ports.add(javaApplication.adminPort.get());
+               }
+               return ports;
+             }));
+           });
+  }
+
+  private void createDockerStartScriptTask(Project project) {
+    project.getTasks()
+           .register(DOCKER_START_SCRIPT_TASK_NAME, CreateStartScripts.class, startScript -> {
+             ((TemplateBasedScriptGenerator) startScript.getUnixStartScriptGenerator()).setTemplate(this.getStartScriptTemplate(project));
+             startScript.setGroup(DockerPlugin.TASK_GROUP);
+             startScript.setDescription("Creates a startup script for use by the docker container");
+             startScript.mustRunAfter(SYNC_BUILD_CONTEXT_TASK_NAME);
+
+             Directory contextDir = project.getLayout()
+                                           .getBuildDirectory()
+                                           .dir("docker")
+                                           .get();
+             JavaApplication javaApplication = project.getExtensions()
+                                                      .getByType(JavaApplication.class);
+             startScript.getMainClass()
+                        .set(javaApplication.getMainClass());
+             startScript.setApplicationName(javaApplication.getApplicationName());
+             startScript.setOutputDir(contextDir.file(DOCKER_BUILD_CONTEXT_SCRIPTS_DIR)
+                                                .getAsFile());
+             startScript.setDefaultJvmOpts(javaApplication.getApplicationDefaultJvmArgs());
+           });
+  }
+
+  private void createContextSyncTask(Project project) {
+    project.getTasks()
+           .register(SYNC_BUILD_CONTEXT_TASK_NAME, Sync.class, sync -> {
+             sync.dependsOn(CLASSES_TASK_NAME);
+             sync.setGroup(DockerPlugin.TASK_GROUP);
+             sync.setDescription("Copies required artifacts into the build context directory");
+             sync.into(this.getDockerfileTask(project)
+                           .map(Dockerfile::getDestDir)
+                           .get());
+             sync.with(project.copySpec(spec -> {
+               spec.into(DOCKER_BUILD_CONTEXT_LIBS_DIR, childSpec -> childSpec.from(getRuntimeClasspath(project)));
+               spec.into(DOCKER_BUILD_CONTEXT_CLASSES_DIR, childSpec -> childSpec.from(mainSourceSetOutput(project).getClassesDirs()));
+               spec.into(DOCKER_BUILD_CONTEXT_RESOURCES_DIR, childSpec -> childSpec.from(mainSourceSetOutput(project).getResourcesDir()));
+             }));
+           });
+  }
+
+  private FileCollection getRuntimeClasspath(Project project) {
+    return project.getConfigurations()
+                  .getByName(RUNTIME_CLASSPATH_CONFIGURATION_NAME);
+  }
+
+  private SourceSetOutput mainSourceSetOutput(Project project) {
+    return project.getConvention()
+                  .getPlugin(JavaPluginConvention.class)
+                  .getSourceSets()
+                  .getByName(SourceSet.MAIN_SOURCE_SET_NAME)
+                  .getOutput();
+  }
+
+  private Provider<File> provideIfDirectoryExists(Provider<Directory> directoryProvider) {
+    return directoryProvider.map(directory -> directory.getAsFile()
+                                                       .isDirectory() ? directory.getAsFile() : null);
+  }
+
+  private TextResource getStartScriptTemplate(Project project) {
+    URL resourceUrl = HypertraceDockerJavaApplicationPlugin.class.getClassLoader()
+                                                                 .getResource("application-start-script.template.sh");
+    return project.getResources()
+                  .getText()
+                  .fromUri(requireNonNull(resourceUrl));
   }
 }
