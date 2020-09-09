@@ -23,17 +23,6 @@
 
 set -e
 
-# Add default JVM options here. You can also use JAVA_OPTS to pass JVM options to this script.
 DEFAULT_JVM_OPTS=${defaultJvmOpts}
 
-# Escape application args
-save () {
-    for i do printf %s\\\\n "\$i" | sed "s/'/'\\\\\\\\''/g;1s/^/'/;\\\$s/\\\$/' \\\\\\\\/" ; done
-    echo " "
-}
-APP_ARGS=`save "\$@"`
-
-# Collect all arguments for the java command, following the shell quoting and substitution rules
-eval set -- \$DEFAULT_JVM_OPTS \$JAVA_OPTS -classpath '/app/resources:/app/classes:/app/libs/*' ${mainClassName} "\$APP_ARGS"
-
-exec java "\$@"
+exec java \$DEFAULT_JVM_OPTS \$JAVA_OPTS -classpath '/app/resources:/app/classes:/app/libs/*' ${mainClassName} \$@
