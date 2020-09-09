@@ -1,6 +1,5 @@
 package org.hypertrace.gradle.docker;
 
-import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static java.util.Objects.requireNonNull;
 import static org.gradle.api.plugins.JavaPlugin.CLASSES_TASK_NAME;
@@ -13,7 +12,6 @@ import java.io.File;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
