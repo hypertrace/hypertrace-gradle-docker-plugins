@@ -4,6 +4,7 @@ import static java.util.Collections.singletonMap;
 import static java.util.Objects.requireNonNull;
 import static org.gradle.api.plugins.JavaPlugin.CLASSES_TASK_NAME;
 import static org.gradle.api.plugins.JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME;
+import static org.hypertrace.gradle.docker.DockerPlugin.COMMIT_SHA_BUILD_ARG;
 
 import com.bmuschko.gradle.docker.tasks.image.Dockerfile;
 import com.bmuschko.gradle.docker.tasks.image.Dockerfile.CopyFile;
@@ -104,6 +105,10 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
              dockerfile.setGroup(DockerPlugin.TASK_GROUP);
              dockerfile.setDescription("Creates a Dockerfile for the java application");
              dockerfile.from(javaApplication.baseImage.map(From::new));
+             dockerfile.arg(COMMIT_SHA_BUILD_ARG + "=unknown");
+             String commitShaArgReference = "${" + COMMIT_SHA_BUILD_ARG + "}";
+             dockerfile.label(singletonMap("commit_sha", commitShaArgReference));
+             dockerfile.environmentVariable("COMMIT_SHA", commitShaArgReference);
              dockerfile.label(javaApplication.maintainer.map(maintainer -> singletonMap("maintainer", maintainer)));
              dockerfile.workingDir("/app");
              dockerfile.copyFile(relativeScriptPath.map(relativePath -> new CopyFile(relativePath, "run")));

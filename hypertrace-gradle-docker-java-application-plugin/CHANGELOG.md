@@ -41,3 +41,8 @@
 ## [0.7.1]
 ### Changed
 - Simplify start script to use provided parameters as given
+
+## [0.8.0]
+### Changed
+- Add COMMIT_SHA to the generated dockerfile as a build arg defaulting to unknown
+- Use COMMIT_SHA build arg to set a label `commit_sha` and environment variable `COMMIT_SHA`
