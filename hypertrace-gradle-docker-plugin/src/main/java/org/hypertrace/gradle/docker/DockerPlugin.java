@@ -16,6 +16,7 @@ public class DockerPlugin implements Plugin<Project> {
   public static final String BUILD_IMAGE_LIFECYCLE_TASK_NAME = "dockerBuildImages";
   public static final String EXTENSION_NAME = "hypertraceDocker";
   public static final String TASK_GROUP = "docker";
+  static final String COMMIT_SHA_BUILD_ARG = "COMMIT_SHA";
 
   @Override
   public void apply(Project target) {
@@ -80,6 +81,9 @@ public class DockerPlugin implements Plugin<Project> {
                               () -> this.getEnabledTagNamesProviderForImage(extension, image)));
                   task.getBuildArgs()
                       .set(image.buildArgs);
+                  this.tryGetBuildSha()
+                      .ifPresent(sha -> task.getBuildArgs()
+                                            .put(COMMIT_SHA_BUILD_ARG, sha));
                   task.onlyIf(image.taskOnlyIf());
                 });
     buildLifecycleTask.configure(lifecycleTask -> lifecycleTask.dependsOn(imageBuildTask));
@@ -112,6 +116,12 @@ public class DockerPlugin implements Plugin<Project> {
         .map(branch -> branch.replaceAll("[^A-Za-z0-9\\.\\_\\-]", ""))
         .filter(branch -> !branch.isEmpty())
         .orElse("test");
+  }
+
+  private Optional<String> tryGetBuildSha() {
+    return getEnvironmentVariable("CIRCLE_SHA1")
+        .map(String::trim)
+        .filter(sha -> !sha.isEmpty());
   }
 
   private DockerPluginExtension registerExtension(Project project) {
