@@ -115,7 +115,11 @@ public class DockerPlugin implements Plugin<Project> {
         .map(String::trim)
         .map(branch -> branch.replaceAll("[^A-Za-z0-9\\.\\_\\-]", ""))
         .filter(branch -> !branch.isEmpty())
-        .orElse("test");
+        .orElse(getEnvironmentVariable("GHA_BRANCH")
+                .map(String::trim)
+                .map(branch -> branch.replaceAll("[^A-Za-z0-9\\.\\_\\-]", ""))
+                .filter(branch -> !branch.isEmpty())
+                .orElse("test"));
   }
 
   private Optional<String> tryGetBuildSha() {
