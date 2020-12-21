@@ -112,7 +112,7 @@ public class DockerPlugin implements Plugin<Project> {
   }
 
   private String getBranchTag() {
-      // Use the value of CIRCLE_BRANCH/ GHA_BRANCH environment variable if defined (that is, the branch name used
+      // Use the value of CIRCLE_BRANCH/ GITHUB_REF environment variable if defined (that is, the branch name used
       // to build in CI), otherwise for local builds use 'test'
       return getEnvironmentVariable("CIRCLE_BRANCH")
           .or(()-> getEnvironmentVariable("GITHUB_REF"))
