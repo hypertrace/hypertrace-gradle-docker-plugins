@@ -123,9 +123,12 @@ public class DockerPlugin implements Plugin<Project> {
   }
 
   private Optional<String> tryGetBuildSha() {
-    return getEnvironmentVariable("CIRCLE_SHA1")
-        .map(String::trim)
-        .filter(sha -> !sha.isEmpty());
+    return Optional.ofNullable(getEnvironmentVariable("CIRCLE_SHA1")
+            .map(String::trim)
+            .filter(sha -> !sha.isEmpty())
+            .orElse(String.valueOf(getEnvironmentVariable("GITHUB_SHA")
+                    .map(String::trim)
+                    .filter(sha -> !sha.isEmpty()))));
   }
 
   private DockerPluginExtension registerExtension(Project project) {
