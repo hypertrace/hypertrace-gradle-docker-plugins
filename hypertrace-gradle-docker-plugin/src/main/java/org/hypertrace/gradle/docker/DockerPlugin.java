@@ -119,7 +119,7 @@ public class DockerPlugin implements Plugin<Project> {
         .map(branch -> branch.replaceAll("[^A-Za-z0-9\\.\\_\\-]", ""))
         .filter(branch -> !branch.isEmpty())
         .orElse("test");
-    }
+  }
 
   private Optional<String> tryGetBuildSha() {
     return getFirstAvailableEnvironmentVariable(Arrays.asList("CIRCLE_BRANCH", "GHA_BRANCH"))
