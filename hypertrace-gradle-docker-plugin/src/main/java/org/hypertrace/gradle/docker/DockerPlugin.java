@@ -3,8 +3,8 @@ package org.hypertrace.gradle.docker;
 import com.bmuschko.gradle.docker.DockerExtension;
 import com.bmuschko.gradle.docker.DockerRemoteApiPlugin;
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage;
-import java.util.Optional;
-import java.util.Set;
+
+import java.util.*;
 import java.util.stream.Collectors;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -111,24 +111,32 @@ public class DockerPlugin implements Plugin<Project> {
   private String getBranchTag() {
     // Use the value of CIRCLE_BRANCH environment variable if defined (that is, the branch name used
     // to build in CI), otherwise for local builds use 'test'
-    return getEnvironmentVariable("CIRCLE_BRANCH")
-        .map(String::trim)
-        .map(branch -> branch.replaceAll("[^A-Za-z0-9\\.\\_\\-]", ""))
-        .filter(branch -> !branch.isEmpty())
-        .orElse(getEnvironmentVariable("GHA_BRANCH")
-                .map(String::trim)
-                .map(branch -> branch.replaceAll("[^A-Za-z0-9\\.\\_\\-]", ""))
-                .filter(branch -> !branch.isEmpty())
-                .orElse("test"));
+
+      Optional<String> environment = Optional.empty();
+      if (getEnvironmentVariable("CIRCLE_BRANCH").isPresent()) {
+          environment = getEnvironmentVariable("CIRCLE_BRANCH");
+      } else if (getEnvironmentVariable("GHA_BRANCH").isPresent()) {
+          environment = getEnvironmentVariable("GHA_BRANCH");
+      }
+      return environment
+            .map(String::trim)
+            .map(branch -> branch.replaceAll("[^A-Za-z0-9\\.\\_\\-]", ""))
+            .filter(branch -> !branch.isEmpty())
+            .orElse("test");
+
   }
 
   private Optional<String> tryGetBuildSha() {
-    return Optional.ofNullable(getEnvironmentVariable("CIRCLE_SHA1")
+
+      Optional<String> environment = Optional.empty();
+      if (getEnvironmentVariable("CIRCLE_SHA1").isPresent()) {
+          environment = getEnvironmentVariable("CIRCLE_SHA1");
+      } else if (getEnvironmentVariable("GITHUB_SHA").isPresent()) {
+          environment = getEnvironmentVariable("GITHUB_SHA");
+      }
+      return environment
             .map(String::trim)
-            .filter(sha -> !sha.isEmpty())
-            .orElse(String.valueOf(getEnvironmentVariable("GITHUB_SHA")
-                    .map(String::trim)
-                    .filter(sha -> !sha.isEmpty()))));
+            .filter(sha -> !sha.isEmpty());
   }
 
   private DockerPluginExtension registerExtension(Project project) {
