@@ -167,12 +167,4 @@ public class DockerPlugin implements Plugin<Project> {
                                      .get(variableName));
   }
 
-  private Optional<String> getFirstAvailableEnvironmentVariable(List<String> environmentKeys) {
-    return environmentKeys.stream()
-            .map(this::getEnvironmentVariable)
-            .filter(Optional::isPresent)
-            .findFirst()
-            .flatMap(i -> i);
-    }
-
 }
