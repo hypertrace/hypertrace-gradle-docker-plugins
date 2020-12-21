@@ -4,7 +4,10 @@ import com.bmuschko.gradle.docker.DockerExtension;
 import com.bmuschko.gradle.docker.DockerRemoteApiPlugin;
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.Set;
+import java.util.List;
 import java.util.stream.Collectors;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
