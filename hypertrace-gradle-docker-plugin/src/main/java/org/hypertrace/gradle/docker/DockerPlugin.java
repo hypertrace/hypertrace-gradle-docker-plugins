@@ -3,6 +3,7 @@ package org.hypertrace.gradle.docker;
 import com.bmuschko.gradle.docker.DockerExtension;
 import com.bmuschko.gradle.docker.DockerRemoteApiPlugin;
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage;
+
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -109,13 +110,16 @@ public class DockerPlugin implements Plugin<Project> {
   }
 
   private String getBranchTag() {
-    // Use the value of CIRCLE_BRANCH environment variable if defined (that is, the branch name used
-    // to build in CI), otherwise for local builds use 'test'
-    return getEnvironmentVariable("CIRCLE_BRANCH")
-        .map(String::trim)
-        .map(branch -> branch.replaceAll("[^A-Za-z0-9\\.\\_\\-]", ""))
-        .filter(branch -> !branch.isEmpty())
-        .orElse("test");
+      // Use the value of CIRCLE_BRANCH/ GITHUB_REF environment variable if defined (that is, the branch name used
+      // to build in CI), otherwise for local builds use 'test'
+      return getEnvironmentVariable("CIRCLE_BRANCH")
+          .or(()-> getEnvironmentVariable("GITHUB_REF"))
+           // Extracting BRANCH_NAME from GITHUB_REF environment variable which is normally in `refs/heads/{BRANCH_NAME} format.
+          .map(branch -> branch.replaceAll("refs\\/heads\\/", ""))
+          .map(String::trim)
+          .map(branch -> branch.replaceAll("[^A-Za-z0-9\\.\\_\\-]", ""))
+          .filter(branch -> !branch.isEmpty())
+          .orElse("test");
   }
 
   private Optional<String> tryGetBuildSha() {
