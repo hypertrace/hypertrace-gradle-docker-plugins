@@ -114,17 +114,21 @@ public class DockerPlugin implements Plugin<Project> {
   private String getBranchTag() {
       // Use the value of CIRCLE_BRANCH/ GHA_BRANCH environment variable if defined (that is, the branch name used
       // to build in CI), otherwise for local builds use 'test'
-    return getFirstAvailableEnvironmentVariable(Arrays.asList("CIRCLE_BRANCH", "GHA_BRANCH"))
-        .map(String::trim)
-        .map(branch -> branch.replaceAll("[^A-Za-z0-9\\.\\_\\-]", ""))
-        .filter(branch -> !branch.isEmpty())
-        .orElse("test");
+      return getEnvironmentVariable("CIRCLE_BRANCH")
+          .map(String::trim)
+          .map(branch -> branch.replaceAll("[^A-Za-z0-9\\.\\_\\-]", ""))
+          .filter(branch -> !branch.isEmpty())
+          .orElse(getEnvironmentVariable("GITHUB_REF")
+                  .map(String::trim)
+                  .map(branch -> branch.replaceAll("(.*)\\/", ""))
+                  .filter(branch -> !branch.isEmpty())
+                  .orElse("test"));
   }
 
   private Optional<String> tryGetBuildSha() {
-    return getFirstAvailableEnvironmentVariable(Arrays.asList("CIRCLE_BRANCH", "GHA_BRANCH"))
-        .map(String::trim)
-        .filter(sha -> !sha.isEmpty());
+      return getEnvironmentVariable("CIRCLE_SHA1")
+          .map(String::trim)
+          .filter(sha -> !sha.isEmpty());
   }
 
   private DockerPluginExtension registerExtension(Project project) {
