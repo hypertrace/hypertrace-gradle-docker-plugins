@@ -109,32 +109,15 @@ public class DockerPlugin implements Plugin<Project> {
   }
 
   private String getBranchTag() {
-    // Use the value of CIRCLE_BRANCH environment variable if defined (that is, the branch name used
-    // to build in CI), otherwise for local builds use 'test'
-
-      Optional<String> environment = Optional.empty();
-      if (getEnvironmentVariable("CIRCLE_BRANCH").isPresent()) {
-          environment = getEnvironmentVariable("CIRCLE_BRANCH");
-      } else if (getEnvironmentVariable("GHA_BRANCH").isPresent()) {
-          environment = getEnvironmentVariable("GHA_BRANCH");
-      }
-      return environment
+    return getFirstAvailableEnvironmentVariable(Arrays.asList("CIRCLE_BRANCH", "GHA_BRANCH"))
             .map(String::trim)
             .map(branch -> branch.replaceAll("[^A-Za-z0-9\\.\\_\\-]", ""))
             .filter(branch -> !branch.isEmpty())
             .orElse("test");
-
-  }
+    }
 
   private Optional<String> tryGetBuildSha() {
-
-      Optional<String> environment = Optional.empty();
-      if (getEnvironmentVariable("CIRCLE_SHA1").isPresent()) {
-          environment = getEnvironmentVariable("CIRCLE_SHA1");
-      } else if (getEnvironmentVariable("GITHUB_SHA").isPresent()) {
-          environment = getEnvironmentVariable("GITHUB_SHA");
-      }
-      return environment
+    return getFirstAvailableEnvironmentVariable(Arrays.asList("CIRCLE_BRANCH", "GHA_BRANCH"))
             .map(String::trim)
             .filter(sha -> !sha.isEmpty());
   }
@@ -174,4 +157,13 @@ public class DockerPlugin implements Plugin<Project> {
     return Optional.ofNullable(System.getenv()
                                      .get(variableName));
   }
+
+  private Optional<String> getFirstAvailableEnvironmentVariable(List<String> environmentKeys) {
+    return environmentKeys.stream()
+            .map(this::getEnvironmentVariable)
+            .filter(Optional::isPresent)
+            .findFirst()
+            .flatMap(i -> i);
+    }
+
 }
