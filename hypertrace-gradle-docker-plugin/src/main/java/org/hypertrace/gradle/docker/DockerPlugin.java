@@ -113,6 +113,9 @@ public class DockerPlugin implements Plugin<Project> {
       // Use the value of CIRCLE_BRANCH/ GITHUB_REF environment variable if defined (that is, the branch name used
       // to build in CI), otherwise for local builds use 'test'
       return getEnvironmentVariable("CIRCLE_BRANCH")
+          // GITHUB_HEAD_REF Only set for pull request events. The name of the head branch.
+          .or(()-> getEnvironmentVariable("GITHUB_HEAD_REF"))
+          // GITHUB_REF The branch or tag ref that triggered the workflow.
           .or(()-> getEnvironmentVariable("GITHUB_REF"))
            // Extracting BRANCH_NAME from GITHUB_REF environment variable which is normally in `refs/heads/{BRANCH_NAME} format.
           .map(branch -> branch.replaceAll("refs\\/heads\\/", ""))
