@@ -130,6 +130,9 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
                if (javaApplication.adminPort.isPresent()) {
                  ports.add(javaApplication.adminPort.get());
                }
+               if (javaApplication.ports.isPresent()) {
+                 ports.addAll(javaApplication.ports.get());
+               }
                return ports;
              }));
            });

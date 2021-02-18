@@ -3,6 +3,7 @@ package org.hypertrace.gradle.docker;
 import java.util.Collections;
 import javax.inject.Inject;
 import org.gradle.api.model.ObjectFactory;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 
@@ -13,6 +14,7 @@ public class HypertraceDockerJavaApplication {
   public final Property<String> serviceName;
   public final Property<Integer> port;
   public final Property<Integer> adminPort;
+  public final ListProperty<Integer> ports;
   public final Property<String> healthCheck;
   public final MapProperty<String, String> envVars;
 
@@ -26,6 +28,7 @@ public class HypertraceDockerJavaApplication {
     this.serviceName = objectFactory.property(String.class)
                                     .convention(projectName);
     this.port = objectFactory.property(Integer.class);
+    this.ports = objectFactory.listProperty(Integer.class);
     this.adminPort = objectFactory.property(Integer.class)
                                   .convention(this.port.map(port -> port + 1));
     this.envVars = objectFactory.mapProperty(String.class, String.class)
