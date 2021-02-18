@@ -19,12 +19,12 @@ An application can define multiple variants which allow specifying different bas
 - `port`
     - Integer
     - No default
-    - Exposed in dockerfile if set
+    - Exposed in dockerfile if set. This can be used in conjunction with, or in place of `ports` - the combined list will be exposed.
 - `ports`
   - List<Integer>
   - No default
-  - Exposed in dockerfile if set
-  - This is equivalent to the singular form, with the exception it does not default the admin port
+  - Exposed in dockerfile if set. This can be used in conjunction with, or in place of `port` - the combined list will be exposed.
+  - This does not set a default for the admin port (compared to `port` which does)
 - `adminPort`
     - Integer
     - If `port` is set, `adminPort` will default to `${port} + 1`
