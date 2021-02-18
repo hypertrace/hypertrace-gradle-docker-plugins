@@ -20,6 +20,11 @@ An application can define multiple variants which allow specifying different bas
     - Integer
     - No default
     - Exposed in dockerfile if set
+- `ports`
+  - List<Integer>
+  - No default
+  - Exposed in dockerfile if set
+  - This is equivalent to the singular form, with the exception it does not default the admin port
 - `adminPort`
     - Integer
     - If `port` is set, `adminPort` will default to `${port} + 1`
