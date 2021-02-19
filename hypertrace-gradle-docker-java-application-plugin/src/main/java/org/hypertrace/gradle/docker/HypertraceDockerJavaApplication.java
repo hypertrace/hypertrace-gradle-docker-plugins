@@ -13,7 +13,7 @@ public class HypertraceDockerJavaApplication {
   public final Property<String> maintainer;
   public final Property<String> serviceName;
   /**
-   * Replaced by by {@link #ports}
+   * Replaced by {@link #ports}
    */
   @Deprecated
   public final Property<Integer> port;
