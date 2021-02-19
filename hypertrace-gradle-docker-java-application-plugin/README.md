@@ -16,19 +16,19 @@ An application can define multiple variants which allow specifying different bas
 - `maintainer`
     - String
     - Defaults to `Hypertrace 'https://www.hypertrace.org/'`
-- `port`
+- `port` (_DEPRECATED_ - replaced by `ports`)
     - Integer
     - No default
-    - Exposed in dockerfile if set
+    - Exposed in dockerfile if set. If used in conjunction with `ports`, the combined list will be exposed.
 - `ports`
-  - List<Integer>
+  - Integer List
   - No default
-  - Exposed in dockerfile if set
-  - This is equivalent to the singular form, with the exception it does not default the admin port
+  - Exposed in dockerfile if set. If used in conjunction with deprecated `port`, the combined list will be exposed.
+  - This does not set a default for the admin port
 - `adminPort`
     - Integer
-    - If `port` is set, `adminPort` will default to `${port} + 1`
-    - If `port` is unset, `adminPort` has no default
+    - No default except for deprecated case described below
+    - _DEPRECATED_: If `port` is set, `adminPort` will default to `${port} + 1`
     - Exposed in dockerfile if set
 - `serviceName`
     - String
