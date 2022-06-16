@@ -96,11 +96,9 @@ public class DockerPlugin implements Plugin<Project> {
 
   private void addDefaultTags(Project project, DockerPluginExtension extension) {
     if (this.isReleaseVersion(project)) {
-      extension.tag(this.getVersionString(project));
       extension.tag(DockerTag.LATEST, tag -> tag.onlyIf(unused -> extension.tagLatest.get()));
-    } else {
-      extension.tag(this.getBranchTag());
     }
+    extension.tag(this.getDefaultVersionTag(project));
   }
 
   private String getVersionString(Project project) {
@@ -124,6 +122,10 @@ public class DockerPlugin implements Plugin<Project> {
           .map(branch -> branch.replaceAll("[^A-Za-z0-9\\.\\_\\-]", ""))
           .filter(branch -> !branch.isEmpty())
           .orElse("test");
+  }
+
+  private String getDefaultVersionTag(Project project) {
+    return this.isReleaseVersion(project) ? this.getVersionString(project) : this.getBranchTag();
   }
 
   private Optional<String> tryGetBuildSha() {
@@ -192,7 +194,7 @@ public class DockerPlugin implements Plugin<Project> {
         createdTask -> {
           createdTask.setDescription("Outputs the docker images with their tags");
           createdTask.doLast(unused -> {
-            project.getLogger().quiet(this.isReleaseVersion(project) ? this.getVersionString(project) : this.getBranchTag());
+            project.getLogger().quiet(getDefaultVersionTag(project));
           });
         }
       );
