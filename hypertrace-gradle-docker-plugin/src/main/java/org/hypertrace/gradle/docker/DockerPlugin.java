@@ -192,7 +192,7 @@ public class DockerPlugin implements Plugin<Project> {
       .register(
         PRINT_DOCKER_IMAGE_DEFAULT_TAG,
         createdTask -> {
-          createdTask.setDescription("Outputs the docker images with their tags");
+          createdTask.setDescription("Outputs the default tag of docker images");
           createdTask.doLast(unused -> {
             project.getLogger().quiet(getDefaultVersionTag(project));
           });
