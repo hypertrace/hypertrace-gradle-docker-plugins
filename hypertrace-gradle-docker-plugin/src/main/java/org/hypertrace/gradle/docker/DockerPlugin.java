@@ -15,6 +15,8 @@ import org.gradle.api.tasks.TaskProvider;
 
 public class DockerPlugin implements Plugin<Project> {
   public static final String BUILD_IMAGE_LIFECYCLE_TASK_NAME = "dockerBuildImages";
+  public static final String PRINT_DOCKER_IMAGE_WITH_TAGS = "printDockerImageWithTags";
+  public static final String PRINT_DOCKER_IMAGE_DEFAULT_TAG = "printDockerImageDefaultTag";
   public static final String EXTENSION_NAME = "hypertraceDocker";
   public static final String TASK_GROUP = "docker";
   static final String COMMIT_SHA_BUILD_ARG = "COMMIT_SHA";
@@ -26,6 +28,8 @@ public class DockerPlugin implements Plugin<Project> {
     DockerPluginExtension extension = this.registerExtension(target);
     this.configureDockerRegistryCredentials(extension);
     this.addDockerBuildTasks(target, extension);
+    this.addPrintDockerImageWithTagsTask(target, extension);
+    this.addPrintDockerImageDefaultTagTask(target);
     this.addDefaultTags(target, extension);
     this.setDefaultImage(target, extension);
   }
@@ -92,11 +96,9 @@ public class DockerPlugin implements Plugin<Project> {
 
   private void addDefaultTags(Project project, DockerPluginExtension extension) {
     if (this.isReleaseVersion(project)) {
-      extension.tag(this.getVersionString(project));
       extension.tag(DockerTag.LATEST, tag -> tag.onlyIf(unused -> extension.tagLatest.get()));
-    } else {
-      extension.tag(this.getBranchTag());
     }
+    extension.tag(this.getDefaultVersionTag(project));
   }
 
   private String getVersionString(Project project) {
@@ -120,6 +122,10 @@ public class DockerPlugin implements Plugin<Project> {
           .map(branch -> branch.replaceAll("[^A-Za-z0-9\\.\\_\\-]", ""))
           .filter(branch -> !branch.isEmpty())
           .orElse("test");
+  }
+
+  private String getDefaultVersionTag(Project project) {
+    return this.isReleaseVersion(project) ? this.getVersionString(project) : this.getBranchTag();
   }
 
   private Optional<String> tryGetBuildSha() {
@@ -162,5 +168,35 @@ public class DockerPlugin implements Plugin<Project> {
   private Optional<String> getEnvironmentVariable(String variableName) {
     return Optional.ofNullable(System.getenv()
                                      .get(variableName));
+  }
+
+  private void addPrintDockerImageWithTagsTask(Project project, DockerPluginExtension extension) {
+    project
+      .getTasks()
+      .register(
+        PRINT_DOCKER_IMAGE_WITH_TAGS,
+        createdTask -> {
+          createdTask.setDescription("Outputs the docker images with their tags");
+          createdTask.doLast(unused -> {
+            extension.images.all(dockerImage -> {
+              getEnabledTagNamesProviderForImage(extension, dockerImage).forEach(image ->
+                project.getLogger().quiet(image));
+            });
+          });
+        });
+  }
+
+  private void addPrintDockerImageDefaultTagTask(Project project) {
+    project
+      .getTasks()
+      .register(
+        PRINT_DOCKER_IMAGE_DEFAULT_TAG,
+        createdTask -> {
+          createdTask.setDescription("Outputs the default tag of docker images");
+          createdTask.doLast(unused -> {
+            project.getLogger().quiet(getDefaultVersionTag(project));
+          });
+        }
+      );
   }
 }
