@@ -18,5 +18,5 @@ gradlePlugin {
 }
 
 dependencies {
-  api("com.bmuschko:gradle-docker-plugin:6.4.0")
+  api("com.bmuschko:gradle-docker-plugin:7.4.0")
 }
