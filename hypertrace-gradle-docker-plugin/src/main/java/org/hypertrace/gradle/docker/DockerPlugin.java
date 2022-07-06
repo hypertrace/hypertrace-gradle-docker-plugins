@@ -112,16 +112,16 @@ public class DockerPlugin implements Plugin<Project> {
   }
 
   private String getBranchTag() {
-      // Use the value of CIRCLE_BRANCH/ GITHUB_REF environment variable if defined (that is, the branch name used
-      // to build in CI), otherwise for local builds use 'test'
-      return getEnvironmentVariable("CIRCLE_BRANCH")
-          .or(()-> getEnvironmentVariable("GITHUB_REF"))
-           // Extracting BRANCH_NAME from GITHUB_REF environment variable which is normally in `refs/heads/{BRANCH_NAME} format.
-          .map(branch -> branch.replaceAll("refs\\/heads\\/", ""))
-          .map(String::trim)
-          .map(branch -> branch.replaceAll("[^A-Za-z0-9\\.\\_\\-]", ""))
-          .filter(branch -> !branch.isEmpty())
-          .orElse("test");
+    // Use the value of CIRCLE_BRANCH/ GITHUB_REF environment variable if defined (that is, the branch name used
+    // to build in CI), otherwise for local builds use 'test'
+    return getEnvironmentVariable("CIRCLE_BRANCH")
+        .or(() -> getEnvironmentVariable("GITHUB_REF"))
+        // Extracting BRANCH_NAME from GITHUB_REF environment variable which is normally in `refs/heads/{BRANCH_NAME} format.
+        .map(branch -> branch.replaceAll("refs\\/heads\\/", ""))
+        .map(String::trim)
+        .map(branch -> branch.replaceAll("[^A-Za-z0-9\\.\\_\\-]", ""))
+        .filter(branch -> !branch.isEmpty())
+        .orElse("test");
   }
 
   private String getDefaultVersionTag(Project project) {
@@ -130,6 +130,7 @@ public class DockerPlugin implements Plugin<Project> {
 
   private Optional<String> tryGetBuildSha() {
     return getEnvironmentVariable("CIRCLE_SHA1")
+        .or(() -> getEnvironmentVariable("GITHUB_SHA"))
         .map(String::trim)
         .filter(sha -> !sha.isEmpty());
   }
@@ -172,31 +173,33 @@ public class DockerPlugin implements Plugin<Project> {
 
   private void addPrintDockerImageWithTagsTask(Project project, DockerPluginExtension extension) {
     project
-      .getTasks()
-      .register(
-        PRINT_DOCKER_IMAGE_WITH_TAGS,
-        createdTask -> {
-          createdTask.setDescription("Outputs the docker images with their tags");
-          createdTask.doLast(unused -> {
-            extension.images.all(dockerImage -> {
-              getEnabledTagNamesProviderForImage(extension, dockerImage).forEach(image ->
-                project.getLogger().quiet(image));
+        .getTasks()
+        .register(
+            PRINT_DOCKER_IMAGE_WITH_TAGS,
+            createdTask -> {
+              createdTask.setDescription("Outputs the docker images with their tags");
+              createdTask.doLast(unused -> {
+                extension.images.all(dockerImage -> {
+                  getEnabledTagNamesProviderForImage(extension, dockerImage).forEach(image ->
+                      project.getLogger()
+                             .quiet(image));
+                });
+              });
             });
-          });
-        });
   }
 
   private void addPrintDockerImageDefaultTagTask(Project project) {
     project
-      .getTasks()
-      .register(
-        PRINT_DOCKER_IMAGE_DEFAULT_TAG,
-        createdTask -> {
-          createdTask.setDescription("Outputs the default tag of docker images");
-          createdTask.doLast(unused -> {
-            project.getLogger().quiet(getDefaultVersionTag(project));
-          });
-        }
-      );
+        .getTasks()
+        .register(
+            PRINT_DOCKER_IMAGE_DEFAULT_TAG,
+            createdTask -> {
+              createdTask.setDescription("Outputs the default tag of docker images");
+              createdTask.doLast(unused -> {
+                project.getLogger()
+                       .quiet(getDefaultVersionTag(project));
+              });
+            }
+        );
   }
 }
