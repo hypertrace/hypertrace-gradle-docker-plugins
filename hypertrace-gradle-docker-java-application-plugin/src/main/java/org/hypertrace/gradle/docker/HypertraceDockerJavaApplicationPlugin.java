@@ -12,6 +12,8 @@ import com.bmuschko.gradle.docker.tasks.image.Dockerfile.From;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import org.gradle.api.Plugin;
@@ -35,7 +37,9 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
   public static final String DOCKERFILE_TASK_NAME = "generateJavaApplicationDockerfile";
   public static final String DOCKER_START_SCRIPT_TASK_NAME = "generateJavaApplicationDockerStartScript";
   public static final String SYNC_BUILD_CONTEXT_TASK_NAME = "syncJavaApplicationDockerContext";
-  private static final String DOCKER_BUILD_CONTEXT_LIBS_DIR = "libs";
+  private static final String DOCKER_BUILD_CONTEXT_EXTERNAL_LIBS_DIR = "externalLibs";
+
+  private static final String DOCKER_BUILD_CONTEXT_LOCAL_LIBS_DIR = "localLibs";
   private static final String DOCKER_BUILD_CONTEXT_CLASSES_DIR = "classes";
   private static final String DOCKER_BUILD_CONTEXT_RESOURCES_DIR = "resources";
   private static final String DOCKER_BUILD_CONTEXT_SCRIPTS_DIR = "scripts";
@@ -113,8 +117,11 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
              dockerfile.workingDir("/app");
              dockerfile.copyFile(relativeScriptPath.map(relativePath -> new CopyFile(relativePath, "run")));
              dockerfile.copyFile(provideIfDirectoryExists(dockerfile.getDestDir()
-                                                                    .map(dir -> dir.dir(DOCKER_BUILD_CONTEXT_LIBS_DIR)))
-                 .map(unused -> new CopyFile(DOCKER_BUILD_CONTEXT_LIBS_DIR, DOCKER_BUILD_CONTEXT_LIBS_DIR)));
+                                                                    .map(dir -> dir.dir(DOCKER_BUILD_CONTEXT_EXTERNAL_LIBS_DIR)))
+                 .map(unused -> new CopyFile(DOCKER_BUILD_CONTEXT_EXTERNAL_LIBS_DIR, DOCKER_BUILD_CONTEXT_EXTERNAL_LIBS_DIR)));
+             dockerfile.copyFile(provideIfDirectoryExists(dockerfile.getDestDir()
+                                                                    .map(dir -> dir.dir(DOCKER_BUILD_CONTEXT_LOCAL_LIBS_DIR)))
+                 .map(unused -> new CopyFile(DOCKER_BUILD_CONTEXT_LOCAL_LIBS_DIR, DOCKER_BUILD_CONTEXT_LOCAL_LIBS_DIR)));
              dockerfile.copyFile(provideIfDirectoryExists(dockerfile.getDestDir()
                                                                     .map(dir -> dir.dir(DOCKER_BUILD_CONTEXT_RESOURCES_DIR)))
                  .map(unused -> new CopyFile(DOCKER_BUILD_CONTEXT_RESOURCES_DIR, DOCKER_BUILD_CONTEXT_RESOURCES_DIR)));
@@ -171,7 +178,15 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
                            .map(Dockerfile::getDestDir)
                            .get());
              sync.with(project.copySpec(spec -> {
-               spec.into(DOCKER_BUILD_CONTEXT_LIBS_DIR, childSpec -> childSpec.from(getRuntimeClasspath(project)));
+               // We split deps into two dirs depending on last modified time, with the assumption that any local jars will be recently built
+               Instant time = Instant.now()
+                                     .minus(30, ChronoUnit.MINUTES);
+               spec.into(DOCKER_BUILD_CONTEXT_LOCAL_LIBS_DIR, childSpec -> childSpec.from(getRuntimeClasspath(project)
+                   .filter(file -> Instant.ofEpochMilli(file.lastModified())
+                                          .isAfter(time))));
+               spec.into(DOCKER_BUILD_CONTEXT_EXTERNAL_LIBS_DIR, childSpec -> childSpec.from(getRuntimeClasspath(project)
+                   .filter(file -> Instant.ofEpochMilli(file.lastModified())
+                                          .isBefore(time))));
                spec.into(DOCKER_BUILD_CONTEXT_CLASSES_DIR, childSpec -> childSpec.from(mainSourceSetOutput(project).getClassesDirs()));
                spec.into(DOCKER_BUILD_CONTEXT_RESOURCES_DIR, childSpec -> childSpec.from(mainSourceSetOutput(project).getResourcesDir()));
              }));

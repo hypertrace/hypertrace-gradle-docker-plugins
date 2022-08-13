@@ -25,4 +25,4 @@ set -e
 
 DEFAULT_JVM_OPTS=${defaultJvmOpts}
 
-exec java \$DEFAULT_JVM_OPTS \$JAVA_OPTS -classpath '/app/resources:/app/classes:/app/libs/*' ${mainClassName} \$@
+exec java \$DEFAULT_JVM_OPTS \$JAVA_OPTS -classpath '/app/resources:/app/classes:/app/localLibs/*:/app/externalLibs/*' ${mainClassName} \$@
