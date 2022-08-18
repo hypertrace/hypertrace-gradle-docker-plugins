@@ -2,10 +2,12 @@ package org.hypertrace.gradle.docker;
 
 import java.util.Collections;
 import javax.inject.Inject;
+import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.specs.Spec;
 
 public class HypertraceDockerJavaApplication {
 
@@ -21,6 +23,7 @@ public class HypertraceDockerJavaApplication {
   public final ListProperty<Integer> ports;
   public final Property<String> healthCheck;
   public final MapProperty<String, String> envVars;
+  public Spec<ResolvedArtifact> orgLibrarySpec;
 
   @Inject
   public HypertraceDockerJavaApplication(
@@ -42,5 +45,13 @@ public class HypertraceDockerJavaApplication {
     this.healthCheck = objectFactory.property(String.class)
                                     .convention(this.adminPort.map(adminPort -> String.format(
                                         "HEALTHCHECK --interval=2s --start-period=15s --timeout=2s CMD wget -qO- http://127.0.0.1:%d/health &> /dev/null || exit 1", adminPort)));
+    this.orgLibrarySpec = this::isHypertraceLibrary;
+  }
+
+  private boolean isHypertraceLibrary(ResolvedArtifact artifact) {
+    return artifact.getModuleVersion()
+                   .getId()
+                   .getGroup()
+                   .startsWith("org.hypertrace");
   }
 }

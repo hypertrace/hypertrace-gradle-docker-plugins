@@ -12,19 +12,22 @@ import com.bmuschko.gradle.docker.tasks.image.Dockerfile.From;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Path;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.file.Directory;
-import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.ApplicationPlugin;
 import org.gradle.api.plugins.JavaApplication;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.resources.TextResource;
+import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetOutput;
 import org.gradle.api.tasks.Sync;
@@ -37,9 +40,9 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
   public static final String DOCKERFILE_TASK_NAME = "generateJavaApplicationDockerfile";
   public static final String DOCKER_START_SCRIPT_TASK_NAME = "generateJavaApplicationDockerStartScript";
   public static final String SYNC_BUILD_CONTEXT_TASK_NAME = "syncJavaApplicationDockerContext";
-  private static final String DOCKER_BUILD_CONTEXT_EXTERNAL_LIBS_DIR = "externalLibs";
-
   private static final String DOCKER_BUILD_CONTEXT_LOCAL_LIBS_DIR = "localLibs";
+  private static final String DOCKER_BUILD_CONTEXT_ORG_LIBS_DIR = "orgLibs";
+  private static final String DOCKER_BUILD_CONTEXT_EXTERNAL_LIBS_DIR = "externalLibs";
   private static final String DOCKER_BUILD_CONTEXT_CLASSES_DIR = "classes";
   private static final String DOCKER_BUILD_CONTEXT_RESOURCES_DIR = "resources";
   private static final String DOCKER_BUILD_CONTEXT_SCRIPTS_DIR = "scripts";
@@ -120,6 +123,9 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
                                                                     .map(dir -> dir.dir(DOCKER_BUILD_CONTEXT_EXTERNAL_LIBS_DIR)))
                  .map(unused -> new CopyFile(DOCKER_BUILD_CONTEXT_EXTERNAL_LIBS_DIR, DOCKER_BUILD_CONTEXT_EXTERNAL_LIBS_DIR)));
              dockerfile.copyFile(provideIfDirectoryExists(dockerfile.getDestDir()
+                                                                    .map(dir -> dir.dir(DOCKER_BUILD_CONTEXT_ORG_LIBS_DIR)))
+                 .map(unused -> new CopyFile(DOCKER_BUILD_CONTEXT_ORG_LIBS_DIR, DOCKER_BUILD_CONTEXT_ORG_LIBS_DIR)));
+             dockerfile.copyFile(provideIfDirectoryExists(dockerfile.getDestDir()
                                                                     .map(dir -> dir.dir(DOCKER_BUILD_CONTEXT_LOCAL_LIBS_DIR)))
                  .map(unused -> new CopyFile(DOCKER_BUILD_CONTEXT_LOCAL_LIBS_DIR, DOCKER_BUILD_CONTEXT_LOCAL_LIBS_DIR)));
              dockerfile.copyFile(provideIfDirectoryExists(dockerfile.getDestDir()
@@ -148,6 +154,7 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
   private void createDockerStartScriptTask(Project project) {
     project.getTasks()
            .register(DOCKER_START_SCRIPT_TASK_NAME, CreateStartScripts.class, startScript -> {
+             startScript.getInputs().file(this.getStartScriptTemplate(project));
              ((TemplateBasedScriptGenerator) startScript.getUnixStartScriptGenerator()).setTemplate(this.getStartScriptTemplate(project));
              startScript.setGroup(DockerPlugin.TASK_GROUP);
              startScript.setDescription("Creates a startup script for use by the docker container");
@@ -178,22 +185,32 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
                            .map(Dockerfile::getDestDir)
                            .get());
              sync.with(project.copySpec(spec -> {
-               // We split deps into two dirs depending on last modified time, with the assumption that any local jars will be recently built
-               Instant time = Instant.now()
-                                     .minus(30, ChronoUnit.MINUTES);
-               spec.into(DOCKER_BUILD_CONTEXT_LOCAL_LIBS_DIR, childSpec -> childSpec.from(getRuntimeClasspath(project)
-                   .filter(file -> Instant.ofEpochMilli(file.lastModified())
-                                          .isAfter(time))));
-               spec.into(DOCKER_BUILD_CONTEXT_EXTERNAL_LIBS_DIR, childSpec -> childSpec.from(getRuntimeClasspath(project)
-                   .filter(file -> Instant.ofEpochMilli(file.lastModified())
-                                          .isBefore(time))));
+               spec.into(DOCKER_BUILD_CONTEXT_LOCAL_LIBS_DIR, childSpec -> childSpec.from(this.buildFilteredLibraryProvider(project, this.buildLocalArtifactPredicate(project))));
+               spec.into(DOCKER_BUILD_CONTEXT_ORG_LIBS_DIR, childSpec -> childSpec.from(this.buildFilteredLibraryProvider(project, this.buildLocalArtifactPredicate(project)
+                                                                                                                                       .negate()
+                                                                                                                                       .and(this.getOrgLibPredicate(project)))));
+               spec.into(DOCKER_BUILD_CONTEXT_EXTERNAL_LIBS_DIR, childSpec -> childSpec.from(this.buildFilteredLibraryProvider(project, this.buildLocalArtifactPredicate(project)
+                                                                                                                                            .negate()
+                                                                                                                                            .and(this.getOrgLibPredicate(project)
+                                                                                                                                                     .negate()))));
                spec.into(DOCKER_BUILD_CONTEXT_CLASSES_DIR, childSpec -> childSpec.from(mainSourceSetOutput(project).getClassesDirs()));
                spec.into(DOCKER_BUILD_CONTEXT_RESOURCES_DIR, childSpec -> childSpec.from(mainSourceSetOutput(project).getResourcesDir()));
              }));
            });
   }
 
-  private FileCollection getRuntimeClasspath(Project project) {
+  private Predicate<ResolvedArtifact> buildLocalArtifactPredicate(Project project) {
+    // Either matching version or missing version indicating a composite project
+    return artifact -> {
+      String artifactVersion = artifact.getModuleVersion()
+                                       .getId()
+                                       .getVersion();
+      return artifactVersion.equals(project.getVersion()
+                                           .toString()) || artifactVersion.equals("unspecified");
+    };
+  }
+
+  private Configuration getRuntimeClasspath(Project project) {
     return project.getConfigurations()
                   .getByName(RUNTIME_CLASSPATH_CONFIGURATION_NAME);
   }
@@ -217,5 +234,19 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
     return project.getResources()
                   .getText()
                   .fromUri(requireNonNull(resourceUrl));
+  }
+
+  private Provider<Collection<File>> buildFilteredLibraryProvider(Project project, Predicate<ResolvedArtifact> filterPredicate) {
+    return project.provider(() -> this.getRuntimeClasspath(project)
+                                      .getResolvedConfiguration()
+                                      .getResolvedArtifacts()
+                                      .stream()
+                                      .filter(filterPredicate)
+                                      .map(ResolvedArtifact::getFile)
+                                      .collect(Collectors.toSet()));
+  }
+
+  private Predicate<ResolvedArtifact> getOrgLibPredicate(Project project) {
+    return this.getHypertraceDockerApplicationExtension(project).orgLibrarySpec::isSatisfiedBy;
   }
 }
