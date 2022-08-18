@@ -154,6 +154,7 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
   private void createDockerStartScriptTask(Project project) {
     project.getTasks()
            .register(DOCKER_START_SCRIPT_TASK_NAME, CreateStartScripts.class, startScript -> {
+             startScript.getInputs().file(this.getStartScriptTemplate(project));
              ((TemplateBasedScriptGenerator) startScript.getUnixStartScriptGenerator()).setTemplate(this.getStartScriptTemplate(project));
              startScript.setGroup(DockerPlugin.TASK_GROUP);
              startScript.setDescription("Creates a startup script for use by the docker container");
