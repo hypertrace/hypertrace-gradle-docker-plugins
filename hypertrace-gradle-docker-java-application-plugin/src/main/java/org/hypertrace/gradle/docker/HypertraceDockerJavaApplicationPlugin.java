@@ -154,7 +154,8 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
   private void createDockerStartScriptTask(Project project) {
     project.getTasks()
            .register(DOCKER_START_SCRIPT_TASK_NAME, CreateStartScripts.class, startScript -> {
-             startScript.getInputs().file(this.getStartScriptTemplate(project));
+             startScript.getInputs()
+                        .file(this.getStartScriptTemplate(project));
              ((TemplateBasedScriptGenerator) startScript.getUnixStartScriptGenerator()).setTemplate(this.getStartScriptTemplate(project));
              startScript.setGroup(DockerPlugin.TASK_GROUP);
              startScript.setDescription("Creates a startup script for use by the docker container");
@@ -178,7 +179,7 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
   private void createContextSyncTask(Project project) {
     project.getTasks()
            .register(SYNC_BUILD_CONTEXT_TASK_NAME, Sync.class, sync -> {
-             sync.dependsOn(CLASSES_TASK_NAME);
+             sync.dependsOn(CLASSES_TASK_NAME, this.getRuntimeClasspath(project));
              sync.setGroup(DockerPlugin.TASK_GROUP);
              sync.setDescription("Copies required artifacts into the build context directory");
              sync.into(this.getDockerfileTask(project)
