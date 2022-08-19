@@ -112,12 +112,6 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
              dockerfile.setGroup(DockerPlugin.TASK_GROUP);
              dockerfile.setDescription("Creates a Dockerfile for the java application");
              dockerfile.from(javaApplication.baseImage.map(From::new));
-             dockerfile.arg(COMMIT_SHA_BUILD_ARG + "=unknown");
-             String commitShaArgReference = "${" + COMMIT_SHA_BUILD_ARG + "}";
-             dockerfile.label(singletonMap("commit_sha", commitShaArgReference));
-             dockerfile.environmentVariable("COMMIT_SHA", commitShaArgReference);
-             dockerfile.label(javaApplication.maintainer.map(maintainer -> singletonMap("maintainer", maintainer)));
-             dockerfile.workingDir("/app");
              dockerfile.copyFile(relativeScriptPath.map(relativePath -> new CopyFile(relativePath, "run")));
              dockerfile.copyFile(provideIfDirectoryExists(dockerfile.getDestDir()
                                                                     .map(dir -> dir.dir(DOCKER_BUILD_CONTEXT_EXTERNAL_LIBS_DIR)))
@@ -132,6 +126,12 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
                                                                     .map(dir -> dir.dir(DOCKER_BUILD_CONTEXT_RESOURCES_DIR)))
                  .map(unused -> new CopyFile(DOCKER_BUILD_CONTEXT_RESOURCES_DIR, DOCKER_BUILD_CONTEXT_RESOURCES_DIR)));
              dockerfile.copyFile(new CopyFile(DOCKER_BUILD_CONTEXT_CLASSES_DIR, DOCKER_BUILD_CONTEXT_CLASSES_DIR));
+             dockerfile.arg(COMMIT_SHA_BUILD_ARG + "=unknown");
+             String commitShaArgReference = "${" + COMMIT_SHA_BUILD_ARG + "}";
+             dockerfile.label(singletonMap("commit_sha", commitShaArgReference));
+             dockerfile.environmentVariable("COMMIT_SHA", commitShaArgReference);
+             dockerfile.label(javaApplication.maintainer.map(maintainer -> singletonMap("maintainer", maintainer)));
+             dockerfile.workingDir("/app");
              dockerfile.instruction(javaApplication.healthCheck);
              dockerfile.environmentVariable(javaApplication.envVars);
              dockerfile.entryPoint("./run");
