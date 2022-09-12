@@ -51,12 +51,7 @@
 
 - Add support for exposing multiple docker image ports via `ports` config
 
-## [0.9.7]
+## [0.9.9]
 
-- Improve docker layering by splitting libraries into 3 layers. From the top down:
-    - Local libraries being built as part of the target gradle build
-    - Organization libraries that satisfy the `orgLibrarySpec` property on the `javaApplication`
-      spec as documented in the README, but do not satisfy the local library criteria.
-    - External libraries, presumed to be any library that does not meet the criteria of either of
-      the above layers.
-- First appeared in 0.9.5, but bugs prevent correct execution until 0.9.7
+- Fix bug introduced in 0.9.8 preventing startup. Docker laying improvements not yet working, so
+  currently equivalent to 0.9.4
