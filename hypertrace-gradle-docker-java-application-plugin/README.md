@@ -54,10 +54,6 @@ An application can define multiple variants which allow specifying different bas
     - This is used in layering the image to separate org libraries into a layer above external
       libraries, under the assumption these will change (and thus invalidate the layer) more
       frequently.
-- `defaultJvmArgs`
-  - List<String>
-  - Defaults to `["--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED"]`
-  - Can be overridden by modifying `applicationDefaultJvmArgs` of `JavaApplication`
 
 For further configuration, use `org.hypertrace.docker-plugin` directly and create a dockerfile.
 

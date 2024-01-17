@@ -67,10 +67,11 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
   }
 
   private void updateDefaultJvmArgs(Project project) {
-    HypertraceDockerJavaApplication hypertraceDockerJavaApplication = getHypertraceDockerApplicationExtension(project);
-    JavaApplication javaApplication = project.getExtensions()
-      .getByType(JavaApplication.class);
-    javaApplication.setApplicationDefaultJvmArgs(hypertraceDockerJavaApplication.defaultJvmArgs.get());
+    // by default allow reflective access for monitoring executor service
+    // https://github.com/micrometer-metrics/micrometer/issues/2317#issuecomment-952700482
+    project.getExtensions()
+      .getByType(JavaApplication.class)
+      .setApplicationDefaultJvmArgs(List.of("--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED"));
   }
 
   private void updateDefaultPublication(Project project) {

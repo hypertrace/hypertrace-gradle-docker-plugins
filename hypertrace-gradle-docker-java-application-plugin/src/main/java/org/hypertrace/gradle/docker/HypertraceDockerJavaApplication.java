@@ -25,7 +25,6 @@ public class HypertraceDockerJavaApplication {
   public final Property<String> healthCheck;
   public final MapProperty<String, String> envVars;
   public Spec<ResolvedArtifact> orgLibrarySpec;
-  public ListProperty<String> defaultJvmArgs;
 
   @Inject
   public HypertraceDockerJavaApplication(
@@ -48,10 +47,6 @@ public class HypertraceDockerJavaApplication {
                                     .convention(this.adminPort.map(adminPort -> String.format(
                                         "HEALTHCHECK --interval=2s --start-period=15s --timeout=2s CMD wget -qO- http://127.0.0.1:%d/health &> /dev/null || exit 1", adminPort)));
     this.orgLibrarySpec = this::isHypertraceLibrary;
-    // by default allow reflective access for monitoring executor service
-    // https://github.com/micrometer-metrics/micrometer/issues/2317#issuecomment-952700482
-    this.defaultJvmArgs = objectFactory.listProperty(String.class)
-      .convention(List.of("--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED"));
   }
 
   private boolean isHypertraceLibrary(ResolvedArtifact artifact) {
