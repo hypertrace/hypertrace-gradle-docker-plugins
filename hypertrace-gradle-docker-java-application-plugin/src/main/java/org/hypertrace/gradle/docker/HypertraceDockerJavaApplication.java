@@ -31,7 +31,7 @@ public class HypertraceDockerJavaApplication {
   public HypertraceDockerJavaApplication(
       ObjectFactory objectFactory, String projectName) {
     this.baseImage = objectFactory.property(String.class)
-                                  .convention("hypertrace/java:11");
+                                  .convention("hypertrace/java:21");
     this.maintainer = objectFactory.property(String.class)
                                    .convention("Hypertrace 'https://www.hypertrace.org/'");
     this.serviceName = objectFactory.property(String.class)
