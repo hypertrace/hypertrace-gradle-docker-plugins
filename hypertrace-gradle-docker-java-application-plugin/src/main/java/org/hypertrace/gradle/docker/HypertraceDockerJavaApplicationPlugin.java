@@ -56,6 +56,7 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
     this.createDockerfileTask(target, this.getHypertraceDockerApplicationExtension(target));
     this.createDockerStartScriptTask(target);
     this.createContextSyncTask(target);
+    this.updateDefaultJvmArgs(target);
     this.updateDefaultPublication(target);
   }
 
@@ -63,6 +64,13 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
     this.getHypertraceDockerExtension(project)
         .getExtensions()
         .create(EXTENSION_NAME, HypertraceDockerJavaApplication.class, project.getName());
+  }
+
+  private void updateDefaultJvmArgs(Project project) {
+    HypertraceDockerJavaApplication hypertraceDockerJavaApplication = getHypertraceDockerApplicationExtension(project);
+    JavaApplication javaApplication = project.getExtensions()
+      .getByType(JavaApplication.class);
+    javaApplication.setApplicationDefaultJvmArgs(hypertraceDockerJavaApplication.defaultJvmArgs.get());
   }
 
   private void updateDefaultPublication(Project project) {
