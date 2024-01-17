@@ -56,6 +56,7 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
     this.createDockerfileTask(target, this.getHypertraceDockerApplicationExtension(target));
     this.createDockerStartScriptTask(target);
     this.createContextSyncTask(target);
+    this.updateDefaultJvmArgs(target);
     this.updateDefaultPublication(target);
   }
 
@@ -63,6 +64,14 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
     this.getHypertraceDockerExtension(project)
         .getExtensions()
         .create(EXTENSION_NAME, HypertraceDockerJavaApplication.class, project.getName());
+  }
+
+  private void updateDefaultJvmArgs(Project project) {
+    // by default allow reflective access for monitoring executor service
+    // https://github.com/micrometer-metrics/micrometer/issues/2317#issuecomment-952700482
+    project.getExtensions()
+      .getByType(JavaApplication.class)
+      .setApplicationDefaultJvmArgs(List.of("--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED"));
   }
 
   private void updateDefaultPublication(Project project) {
