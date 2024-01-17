@@ -15,7 +15,7 @@ An application can define multiple variants which allow specifying different bas
 
 - `baseImage`
     - String
-    - Defaults to `hypertrace/java:11`
+    - Defaults to `hypertrace/java:21`
 - `maintainer`
     - String
     - Defaults to `Hypertrace 'https://www.hypertrace.org/'`
