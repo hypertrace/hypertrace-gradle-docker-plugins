@@ -44,7 +44,7 @@ public abstract class DockerImage implements Named {
     this.buildArgs = objectFactory.mapProperty(String.class, String.class);
     this.imageName = objectFactory.property(String.class).convention(name);
     this.platforms =
-        objectFactory.listProperty(String.class).convention(List.of("linux/amd64", "linux/arm64"));
+        objectFactory.listProperty(String.class).convention(List.of("linux/amd64"));
     this.dockerFile =
         objectFactory
             .fileProperty()

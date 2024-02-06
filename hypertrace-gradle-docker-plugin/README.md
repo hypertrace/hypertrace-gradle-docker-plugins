@@ -17,6 +17,7 @@ Each image can be configured with:
  - Dockerfile: Dockerfile to use. Defaults to `Dockerfile.${name}` for non-default images
  - Build Context: Directory context to build. Defaults to parent dir of Dockerfile.
  - Build Args: Map of Custom arguments (String/String) for docker build. Defaults to empty.
+ - platforms: List of platforms passed to docker. Defaults to `{linux/amd64}`
  - onlyIf: Disable image based on certain rules
  - dependsOn: Dependency tasks to run before building the image.
  - tagNameTransform: How to map a tag string from a tag object. Defaults to tag.getName()
