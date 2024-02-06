@@ -13,10 +13,8 @@ public class DockerPublishPlugin implements Plugin<Project> {
 
   @Override
   public void apply(Project target) {
-    target.getPluginManager()
-          .apply(DockerRemoteApiPlugin.class);
-    target.getPluginManager()
-          .apply(DockerPlugin.class);
+    target.getPluginManager().apply(DockerRemoteApiPlugin.class);
+    target.getPluginManager().apply(DockerPlugin.class);
     this.addDockerPushTasks(target);
   }
 
@@ -55,18 +53,15 @@ public class DockerPublishPlugin implements Plugin<Project> {
                 task -> {
                   task.setGroup(DockerPublishPlugin.TASK_GROUP);
                   task.setDescription(
-                      "Pushes docker image "
-                          + image.getFullImageNameWithTag(tag).get());
+                      "Pushes docker image " + image.getFullImageNameWithTag(tag).get());
                   task.dependsOn(image.getBuildTaskName());
-                  task.getImages()
-                      .add(image.getFullImageNameWithTag(tag));
+                  task.getImages().add(image.getFullImageNameWithTag(tag));
                   task.onlyIf(tag.taskOnlyIf(image));
                 });
     pushLifecycleTask.configure(lifecycleTask -> lifecycleTask.dependsOn(imagePushTask));
   }
 
   private DockerPluginExtension getHypertraceDockerExtension(Project project) {
-    return project.getExtensions()
-                  .getByType(DockerPluginExtension.class);
+    return project.getExtensions().getByType(DockerPluginExtension.class);
   }
 }

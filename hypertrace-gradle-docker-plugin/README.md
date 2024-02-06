@@ -3,7 +3,7 @@
 
 ### Purpose
 This plugin configures the target project to communicate with docker, and build docker images based
-on one or more Dockerfiles. 
+on one or more Dockerfiles.
 
 Each registered image will be tagged with each registered tag, unless configured otherwise.
 Build tasks will be created for each image, and a lifecycle tasks that builds all image is available as `dockerBuildImages`.
@@ -20,7 +20,7 @@ Each image can be configured with:
  - onlyIf: Disable image based on certain rules
  - dependsOn: Dependency tasks to run before building the image.
  - tagNameTransform: How to map a tag string from a tag object. Defaults to tag.getName()
-    
+
 By default, there is a single image registered, looking for a file named `Dockerfile` with an image name `${project.name}`.
 This image is accessible in the DSL via `defaultImage()`
 
@@ -61,7 +61,7 @@ hypertraceDocker {
 ```
 
 ### Other configuration
-The following other values can also be set via the `hypertraceDocker` dsl. 
+The following other values can also be set via the `hypertraceDocker` dsl.
 
 - `registryCredentials` - user, password and registry used for pulling and pushing images.
  By default, these will point to dockerhub with no user or password. If the DOCKER_REGISTRY,
@@ -69,13 +69,13 @@ The following other values can also be set via the `hypertraceDocker` dsl.
  defaullt, overridable by dsl.
 
 - `namespace` - this will prefix any pushed image name, and defaults to `hypertrace`.
- 
+
 - `tagLatest` - if true, adds a latest tag to each image in addition to other tags (defaults to `true`)
 
 The full image name is calculated as `[{customRegistry}/][{namespace}/]imageName:tag`
 
 ### Full example
-Project name: `example-dockerfile`  
+Project name: `example-dockerfile`
 Project version: `0.3.0`
 
 ```kotlin
@@ -102,4 +102,3 @@ Note the following behavior. The plugin will attempt to use the docker file `${p
 `secondImage` will be tagged with `${project.version}` and `tagForSecondImageOnly`.
 It will also use the default image, `${project.name}` based on the docker file `${projectDir}/DockerFile`,
 which will be tagged with `${project.version}` only.
-

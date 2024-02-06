@@ -3,7 +3,6 @@ package org.hypertrace.gradle.docker;
 import com.bmuschko.gradle.docker.DockerExtension;
 import com.bmuschko.gradle.docker.DockerRemoteApiPlugin;
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage;
-
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -23,8 +22,7 @@ public class DockerPlugin implements Plugin<Project> {
 
   @Override
   public void apply(Project target) {
-    target.getPluginManager()
-          .apply(DockerRemoteApiPlugin.class);
+    target.getPluginManager().apply(DockerRemoteApiPlugin.class);
     DockerPluginExtension extension = this.registerExtension(target);
     this.configureDockerRegistryCredentials(extension);
     this.addDockerBuildTasks(target, extension);
@@ -73,22 +71,23 @@ public class DockerPlugin implements Plugin<Project> {
                 task -> {
                   task.setGroup(TASK_GROUP);
 
-                  task.setDescription("Builds docker image " + image.getFullImageNameWithoutTag()
-                                                                    .get());
+                  task.setDescription(
+                      "Builds docker image " + image.getFullImageNameWithoutTag().get());
                   task.dependsOn(project.provider(image::getDependsOn));
-                  task.getDockerFile()
-                      .set(image.dockerFile);
-                  task.getInputDir()
-                      .set(image.buildContext);
+                  task.getDockerFile().set(image.dockerFile);
+                  task.getInputDir().set(image.buildContext);
                   task.getImages()
                       .addAll(
                           project.provider(
                               () -> this.getEnabledTagNamesProviderForImage(extension, image)));
-                  task.getBuildArgs()
-                      .set(image.buildArgs);
+                  task.getBuildArgs().set(image.buildArgs);
+                  task.getPlatform()
+                      .set(
+                          image.platforms.map(
+                              platformList ->
+                                  platformList.stream().collect(Collectors.joining(","))));
                   this.tryGetBuildSha()
-                      .ifPresent(sha -> task.getBuildArgs()
-                                            .put(COMMIT_SHA_BUILD_ARG, sha));
+                      .ifPresent(sha -> task.getBuildArgs().put(COMMIT_SHA_BUILD_ARG, sha));
                   task.onlyIf(image.taskOnlyIf());
                 });
     buildLifecycleTask.configure(lifecycleTask -> lifecycleTask.dependsOn(imageBuildTask));
@@ -102,21 +101,21 @@ public class DockerPlugin implements Plugin<Project> {
   }
 
   private String getVersionString(Project project) {
-    return project.getVersion()
-                  .toString();
+    return project.getVersion().toString();
   }
 
   private boolean isReleaseVersion(Project project) {
-    return !this.getVersionString(project)
-                .contains("SNAPSHOT");
+    return !this.getVersionString(project).contains("SNAPSHOT");
   }
 
   private String getBranchTag() {
-    // Use the value of CIRCLE_BRANCH/ GITHUB_REF environment variable if defined (that is, the branch name used
+    // Use the value of CIRCLE_BRANCH/ GITHUB_REF environment variable if defined (that is, the
+    // branch name used
     // to build in CI), otherwise for local builds use 'test'
     return getEnvironmentVariable("CIRCLE_BRANCH")
         .or(() -> getEnvironmentVariable("GITHUB_REF"))
-        // Extracting BRANCH_NAME from GITHUB_REF environment variable which is normally in `refs/heads/{BRANCH_NAME} format.
+        // Extracting BRANCH_NAME from GITHUB_REF environment variable which is normally in
+        // `refs/heads/{BRANCH_NAME} format.
         .map(branch -> branch.replaceAll("refs\\/heads\\/", ""))
         .map(String::trim)
         .map(branch -> branch.replaceAll("[^A-Za-z0-9\\.\\_\\-]", ""))
@@ -141,34 +140,28 @@ public class DockerPlugin implements Plugin<Project> {
         .create(
             EXTENSION_NAME,
             DockerPluginExtension.class,
-            project.getExtensions()
-                   .getByType(DockerExtension.class)
-                   .getRegistryCredentials());
+            project.getExtensions().getByType(DockerExtension.class).getRegistryCredentials());
   }
 
   private Set<String> getEnabledTagNamesProviderForImage(
       DockerPluginExtension extension, DockerImage image) {
-    return extension.enabledTagsForImage(image)
-                    .stream()
-                    .map(image::getFullImageNameWithTag)
-                    .map(Provider::get)
-                    .collect(Collectors.toSet());
+    return extension.enabledTagsForImage(image).stream()
+        .map(image::getFullImageNameWithTag)
+        .map(Provider::get)
+        .collect(Collectors.toSet());
   }
 
   private void setDefaultImage(Project project, DockerPluginExtension extension) {
     extension.defaultImage(
         image -> {
           image.dockerFile.convention(
-              project.provider(() -> project.getLayout()
-                                            .getProjectDirectory()
-                                            .file("Dockerfile")));
+              project.provider(() -> project.getLayout().getProjectDirectory().file("Dockerfile")));
           image.imageName.convention(project.provider(project::getName));
         });
   }
 
   private Optional<String> getEnvironmentVariable(String variableName) {
-    return Optional.ofNullable(System.getenv()
-                                     .get(variableName));
+    return Optional.ofNullable(System.getenv().get(variableName));
   }
 
   private void addPrintDockerImageWithTagsTask(Project project, DockerPluginExtension extension) {
@@ -178,13 +171,14 @@ public class DockerPlugin implements Plugin<Project> {
             PRINT_DOCKER_IMAGE_WITH_TAGS,
             createdTask -> {
               createdTask.setDescription("Outputs the docker images with their tags");
-              createdTask.doLast(unused -> {
-                extension.images.all(dockerImage -> {
-                  getEnabledTagNamesProviderForImage(extension, dockerImage).forEach(image ->
-                      project.getLogger()
-                             .quiet(image));
-                });
-              });
+              createdTask.doLast(
+                  unused -> {
+                    extension.images.all(
+                        dockerImage -> {
+                          getEnabledTagNamesProviderForImage(extension, dockerImage)
+                              .forEach(image -> project.getLogger().quiet(image));
+                        });
+                  });
             });
   }
 
@@ -195,11 +189,10 @@ public class DockerPlugin implements Plugin<Project> {
             PRINT_DOCKER_IMAGE_DEFAULT_TAG,
             createdTask -> {
               createdTask.setDescription("Outputs the default tag of docker images");
-              createdTask.doLast(unused -> {
-                project.getLogger()
-                       .quiet(getDefaultVersionTag(project));
-              });
-            }
-        );
+              createdTask.doLast(
+                  unused -> {
+                    project.getLogger().quiet(getDefaultVersionTag(project));
+                  });
+            });
   }
 }

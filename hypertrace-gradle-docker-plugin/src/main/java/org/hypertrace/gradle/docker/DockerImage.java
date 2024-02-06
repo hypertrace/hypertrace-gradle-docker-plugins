@@ -30,6 +30,7 @@ public abstract class DockerImage implements Named {
   public final Property<String> imageName;
   public final RegularFileProperty dockerFile;
   public final MapProperty<String, String> buildArgs;
+  public final ListProperty<String> platforms;
   private Transformer<String, DockerTag> tagNameTransform = DockerTag::getName;
 
   @Inject
@@ -41,13 +42,13 @@ public abstract class DockerImage implements Named {
     this.name = name;
     this.extension = extension;
     this.buildArgs = objectFactory.mapProperty(String.class, String.class);
-    this.imageName = objectFactory.property(String.class)
-                                  .convention(name);
+    this.imageName = objectFactory.property(String.class).convention(name);
+    this.platforms =
+        objectFactory.listProperty(String.class).convention(List.of("linux/amd64", "linux/arm64"));
     this.dockerFile =
         objectFactory
             .fileProperty()
-            .convention(projectLayout.getProjectDirectory()
-                                     .file("Dockerfile." + this.getName()));
+            .convention(projectLayout.getProjectDirectory().file("Dockerfile." + this.getName()));
 
     this.buildContext =
         objectFactory
@@ -55,8 +56,7 @@ public abstract class DockerImage implements Named {
             .convention(
                 projectLayout
                     .getProjectDirectory()
-                    .dir(dockerFile.map(file -> file.getAsFile()
-                                                    .getParent())));
+                    .dir(dockerFile.map(file -> file.getAsFile().getParent())));
     this.dependsOn = objectFactory.listProperty(Object.class);
   }
 
@@ -106,7 +106,7 @@ public abstract class DockerImage implements Named {
 
   Provider<String> getFullImageNameWithTag(DockerTag tag) {
     return this.getFullImageNameWithoutTag()
-               .map(imageName -> imageName + ":" + this.tagNameTransform.transform(tag));
+        .map(imageName -> imageName + ":" + this.tagNameTransform.transform(tag));
   }
 
   Provider<String> getFullImageNameWithoutTag() {
@@ -115,8 +115,7 @@ public abstract class DockerImage implements Named {
         .getUrl()
         .map(url -> url.equals(DockerRegistryCredentials.DEFAULT_URL) ? "" : url + "/")
         .orElse("")
-        .flatMap(registry -> this.getNamespacedImageName()
-                                 .map(imageName -> registry + imageName));
+        .flatMap(registry -> this.getNamespacedImageName().map(imageName -> registry + imageName));
   }
 
   Provider<String> getNamespacedImageName() {
@@ -126,5 +125,4 @@ public abstract class DockerImage implements Named {
         .orElse("")
         .flatMap(namespacePrefix -> imageName.map(imageName -> namespacePrefix + imageName));
   }
-
 }

@@ -21,4 +21,3 @@ dependencies {
   api("com.bmuschko:gradle-docker-plugin:7.4.0")
   api(project(":hypertrace-gradle-docker-plugin"))
 }
-

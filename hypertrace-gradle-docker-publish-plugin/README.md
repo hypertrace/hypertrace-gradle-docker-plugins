@@ -4,11 +4,11 @@
 ### Purpose
 This plugin configures the target project to push docker images to a remote registry
 based on the configuration of the plugin `org.hypertrace.docker-plugin`. It adds push tasks
-for each image and tag pair, as registered in the `hypertraceDocker` extension, as well as a lifecycle task to push 
+for each image and tag pair, as registered in the `hypertraceDocker` extension, as well as a lifecycle task to push
 everything - `dockerPushImages`
 
 ### Full example
-Project name: `example-dockerfile`  
+Project name: `example-dockerfile`
 Project version: `0.3.0`
 
 ```kotlin
