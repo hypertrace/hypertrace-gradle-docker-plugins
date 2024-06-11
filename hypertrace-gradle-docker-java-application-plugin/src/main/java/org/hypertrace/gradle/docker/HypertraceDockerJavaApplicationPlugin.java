@@ -56,7 +56,7 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
     this.createDockerfileTask(target, this.getHypertraceDockerApplicationExtension(target));
     this.createDockerStartScriptTask(target);
     this.createContextSyncTask(target);
-    this.updateDefaultJvmArgs(target);
+    this.updateDefaultJvmArgs(target, this.getHypertraceDockerApplicationExtension(target));
     this.updateDefaultPublication(target);
   }
 
@@ -66,12 +66,17 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
         .create(EXTENSION_NAME, HypertraceDockerJavaApplication.class, project.getName());
   }
 
-  private void updateDefaultJvmArgs(Project project) {
+  private void updateDefaultJvmArgs(Project project, HypertraceDockerJavaApplication javaApplication) {
     // by default allow reflective access for monitoring executor service
     // https://github.com/micrometer-metrics/micrometer/issues/2317#issuecomment-952700482
+    List<String> jvmArgs = new ArrayList<>(List.of("--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED"));
+    // add generational zgc if it is java 21 base image
+    if (javaApplication.baseImage.getOrElse("").endsWith("java:21")) {
+      jvmArgs.addAll(List.of("-XX:+UseZGC", "XX:+ZGenerational"));
+    }
     project.getExtensions()
       .getByType(JavaApplication.class)
-      .setApplicationDefaultJvmArgs(List.of("--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED"));
+      .setApplicationDefaultJvmArgs(jvmArgs);
   }
 
   private void updateDefaultPublication(Project project) {
