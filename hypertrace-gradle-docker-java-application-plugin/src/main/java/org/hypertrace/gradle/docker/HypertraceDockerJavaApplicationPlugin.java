@@ -72,7 +72,7 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
     List<String> jvmArgs = new ArrayList<>(List.of("--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED"));
     // add generational zgc if it is java 21 base image
     if (javaApplication.baseImage.getOrElse("").endsWith("java:21")) {
-      jvmArgs.addAll(List.of("-XX:+UseZGC", "XX:+ZGenerational"));
+      jvmArgs.addAll(List.of("-XX:+UseZGC", "-XX:+ZGenerational"));
     }
     project.getExtensions()
       .getByType(JavaApplication.class)
