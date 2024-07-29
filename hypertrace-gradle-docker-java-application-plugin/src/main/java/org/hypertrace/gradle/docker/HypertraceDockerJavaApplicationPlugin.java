@@ -17,6 +17,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import org.gradle.api.JavaVersion;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -56,7 +58,7 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
     this.createDockerfileTask(target, this.getHypertraceDockerApplicationExtension(target));
     this.createDockerStartScriptTask(target);
     this.createContextSyncTask(target);
-    this.updateDefaultJvmArgs(target);
+    this.updateDefaultJvmArgs(target, this.getHypertraceDockerApplicationExtension(target));
     this.updateDefaultPublication(target);
   }
 
@@ -66,7 +68,7 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
         .create(EXTENSION_NAME, HypertraceDockerJavaApplication.class, project.getName());
   }
 
-  private void updateDefaultJvmArgs(Project project) {
+  private void updateDefaultJvmArgs(Project project, HypertraceDockerJavaApplication javaApplication) {
     // by default allow reflective access for monitoring executor service
     // https://github.com/micrometer-metrics/micrometer/issues/2317#issuecomment-952700482
     project.getExtensions()
@@ -180,7 +182,13 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
              startScript.setApplicationName(javaApplication.getApplicationName());
              startScript.setOutputDir(contextDir.file(DOCKER_BUILD_CONTEXT_SCRIPTS_DIR)
                                                 .getAsFile());
-             startScript.setDefaultJvmOpts(javaApplication.getApplicationDefaultJvmArgs());
+             List<String> jvmArgs = new ArrayList<>();
+             javaApplication.getApplicationDefaultJvmArgs().forEach(jvmArgs::add);
+             // add generational zgc if it is java 21 based
+             if (getHypertraceDockerApplicationExtension(project).javaVersion.get() == JavaVersion.VERSION_21) {
+               jvmArgs.addAll(List.of("-XX:+UseZGC", "-XX:+ZGenerational"));
+             }
+             startScript.setDefaultJvmOpts(jvmArgs);
            });
   }
 

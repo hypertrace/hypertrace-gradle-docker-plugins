@@ -1,8 +1,9 @@
 package org.hypertrace.gradle.docker;
 
 import java.util.Collections;
-import java.util.List;
 import javax.inject.Inject;
+
+import org.gradle.api.JavaVersion;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.ListProperty;
@@ -25,12 +26,15 @@ public class HypertraceDockerJavaApplication {
   public final Property<String> healthCheck;
   public final MapProperty<String, String> envVars;
   public Spec<ResolvedArtifact> orgLibrarySpec;
+  public final Property<JavaVersion> javaVersion;
 
   @Inject
   public HypertraceDockerJavaApplication(
       ObjectFactory objectFactory, String projectName) {
+    this.javaVersion = objectFactory.property(JavaVersion.class)
+                                    .convention(JavaVersion.VERSION_11);
     this.baseImage = objectFactory.property(String.class)
-                                  .convention("hypertrace/java:21");
+                                    .convention(this.javaVersion.map(javaVersion -> "hypertrace/java:" + javaVersion.getMajorVersion()));
     this.maintainer = objectFactory.property(String.class)
                                    .convention("Hypertrace 'https://www.hypertrace.org/'");
     this.serviceName = objectFactory.property(String.class)
