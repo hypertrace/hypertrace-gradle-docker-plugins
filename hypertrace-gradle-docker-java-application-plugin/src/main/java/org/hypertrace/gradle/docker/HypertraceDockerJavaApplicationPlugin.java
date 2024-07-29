@@ -27,7 +27,6 @@ import org.gradle.api.file.Directory;
 import org.gradle.api.plugins.ApplicationPlugin;
 import org.gradle.api.plugins.JavaApplication;
 import org.gradle.api.plugins.JavaPluginExtension;
-import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.resources.TextResource;
 import org.gradle.api.tasks.SourceSet;
@@ -163,7 +162,7 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
   }
 
   private Provider<From> getBaseImage(HypertraceDockerJavaApplication javaApplication) {
-    return javaApplication.customBaseImage.orElse(
+    return javaApplication.baseImage.orElse(
       "hypertrace/java:" + javaApplication.javaVersion.get().getMajorVersion()
     ).map(From::new);
   }

@@ -13,6 +13,7 @@ import org.gradle.api.specs.Spec;
 
 public class HypertraceDockerJavaApplication {
 
+  public final Property<String> baseImage;
   public final Property<String> maintainer;
   public final Property<String> serviceName;
   /**
@@ -26,14 +27,13 @@ public class HypertraceDockerJavaApplication {
   public final MapProperty<String, String> envVars;
   public Spec<ResolvedArtifact> orgLibrarySpec;
   public final Property<JavaVersion> javaVersion;
-  public final Property<String> customBaseImage;
 
   @Inject
   public HypertraceDockerJavaApplication(
       ObjectFactory objectFactory, String projectName) {
     this.javaVersion = objectFactory.property(JavaVersion.class)
                                     .convention(JavaVersion.VERSION_11);
-    this.customBaseImage = objectFactory.property(String.class);
+    this.baseImage = objectFactory.property(String.class);
     this.maintainer = objectFactory.property(String.class)
                                    .convention("Hypertrace 'https://www.hypertrace.org/'");
     this.serviceName = objectFactory.property(String.class)
