@@ -121,7 +121,7 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
              dockerfile.dependsOn(this.getStartScriptTask(project), SYNC_BUILD_CONTEXT_TASK_NAME);
              dockerfile.setGroup(DockerPlugin.TASK_GROUP);
              dockerfile.setDescription("Creates a Dockerfile for the java application");
-             dockerfile.from(getBaseImage(javaApplication));
+             dockerfile.from(javaApplication.baseImage.map(From::new));
              dockerfile.workingDir("/app");
              dockerfile.copyFile(provideIfDirectoryExists(dockerfile.getDestDir()
                                                                     .map(dir -> dir.dir(DOCKER_BUILD_CONTEXT_EXTERNAL_LIBS_DIR)))
@@ -159,12 +159,6 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
                return ports;
              }));
            });
-  }
-
-  private Provider<From> getBaseImage(HypertraceDockerJavaApplication javaApplication) {
-    return javaApplication.baseImage.orElse(
-      "hypertrace/java:" + javaApplication.javaVersion.get().getMajorVersion()
-    ).map(From::new);
   }
 
   private void createDockerStartScriptTask(Project project) {

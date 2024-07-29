@@ -33,7 +33,8 @@ public class HypertraceDockerJavaApplication {
       ObjectFactory objectFactory, String projectName) {
     this.javaVersion = objectFactory.property(JavaVersion.class)
                                     .convention(JavaVersion.VERSION_11);
-    this.baseImage = objectFactory.property(String.class);
+    this.baseImage = objectFactory.property(String.class)
+                                    .convention(this.javaVersion.map(javaVersion -> "hypertrace/java:" + javaVersion.getMajorVersion()));
     this.maintainer = objectFactory.property(String.class)
                                    .convention("Hypertrace 'https://www.hypertrace.org/'");
     this.serviceName = objectFactory.property(String.class)
