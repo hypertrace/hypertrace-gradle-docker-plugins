@@ -17,6 +17,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import org.gradle.api.JavaVersion;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -25,6 +27,7 @@ import org.gradle.api.file.Directory;
 import org.gradle.api.plugins.ApplicationPlugin;
 import org.gradle.api.plugins.JavaApplication;
 import org.gradle.api.plugins.JavaPluginExtension;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.resources.TextResource;
 import org.gradle.api.tasks.SourceSet;
@@ -69,14 +72,9 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
   private void updateDefaultJvmArgs(Project project, HypertraceDockerJavaApplication javaApplication) {
     // by default allow reflective access for monitoring executor service
     // https://github.com/micrometer-metrics/micrometer/issues/2317#issuecomment-952700482
-    List<String> jvmArgs = new ArrayList<>(List.of("--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED"));
-    // add generational zgc if it is java 21 base image
-    if (javaApplication.baseImage.getOrElse("").endsWith("java:21")) {
-      jvmArgs.addAll(List.of("-XX:+UseZGC", "-XX:+ZGenerational"));
-    }
     project.getExtensions()
       .getByType(JavaApplication.class)
-      .setApplicationDefaultJvmArgs(jvmArgs);
+      .setApplicationDefaultJvmArgs(List.of("--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED"));
   }
 
   private void updateDefaultPublication(Project project) {
@@ -124,7 +122,7 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
              dockerfile.dependsOn(this.getStartScriptTask(project), SYNC_BUILD_CONTEXT_TASK_NAME);
              dockerfile.setGroup(DockerPlugin.TASK_GROUP);
              dockerfile.setDescription("Creates a Dockerfile for the java application");
-             dockerfile.from(javaApplication.baseImage.map(From::new));
+             dockerfile.from(getBaseImage(javaApplication));
              dockerfile.workingDir("/app");
              dockerfile.copyFile(provideIfDirectoryExists(dockerfile.getDestDir()
                                                                     .map(dir -> dir.dir(DOCKER_BUILD_CONTEXT_EXTERNAL_LIBS_DIR)))
@@ -164,6 +162,12 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
            });
   }
 
+  private Provider<From> getBaseImage(HypertraceDockerJavaApplication javaApplication) {
+    return javaApplication.customBaseImage.orElse(
+      "hypertrace/java:" + javaApplication.javaVersion.get().getMajorVersion()
+    ).map(From::new);
+  }
+
   private void createDockerStartScriptTask(Project project) {
     project.getTasks()
            .register(DOCKER_START_SCRIPT_TASK_NAME, CreateStartScripts.class, startScript -> {
@@ -185,7 +189,13 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
              startScript.setApplicationName(javaApplication.getApplicationName());
              startScript.setOutputDir(contextDir.file(DOCKER_BUILD_CONTEXT_SCRIPTS_DIR)
                                                 .getAsFile());
-             startScript.setDefaultJvmOpts(javaApplication.getApplicationDefaultJvmArgs());
+             List<String> jvmArgs = new ArrayList<>();
+             javaApplication.getApplicationDefaultJvmArgs().forEach(jvmArgs::add);
+             // add generational zgc if it is java 21 based
+             if (getHypertraceDockerApplicationExtension(project).javaVersion.get() == JavaVersion.VERSION_21) {
+               jvmArgs.addAll(List.of("-XX:+UseZGC", "-XX:+ZGenerational"));
+             }
+             startScript.setDefaultJvmOpts(jvmArgs);
            });
   }
 
