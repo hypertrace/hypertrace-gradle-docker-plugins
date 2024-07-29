@@ -13,9 +13,11 @@ Additionally, the main class is taken from the application plugin - the
 default behavior of `com.bmuschko.docker-java-application` for identifying main classes is not used.
 An application can define multiple variants which allow specifying different base images to use.
 
+- `javaVersion`
+    - JavaVersion 
 - `baseImage`
     - String
-    - Defaults to `hypertrace/java:21`
+    - Defaults to hypertrace/java:JavaMajorVersion
 - `maintainer`
     - String
     - Defaults to `Hypertrace 'https://www.hypertrace.org/'`
