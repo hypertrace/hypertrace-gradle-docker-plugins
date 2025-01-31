@@ -69,7 +69,8 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
             .create(EXTENSION_NAME, HypertraceDockerJavaApplication.class, project.getName());
 
     extension.javaVersion.convention(
-        getJavaExtension(project).getToolchain().getLanguageVersion().map(JavaVersion::toVersion));
+        getJavaExtension(project).getToolchain().getLanguageVersion().map(JavaVersion::toVersion)
+            .orElse(JavaVersion.VERSION_11));
   }
 
   private void updateDefaultJvmArgs(Project project, HypertraceDockerJavaApplication javaApplication) {
