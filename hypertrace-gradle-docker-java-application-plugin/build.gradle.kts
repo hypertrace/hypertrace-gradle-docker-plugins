@@ -4,8 +4,8 @@ plugins {
 }
 
 java {
-  targetCompatibility = JavaVersion.VERSION_1_8
-  sourceCompatibility = JavaVersion.VERSION_1_8
+  targetCompatibility = JavaVersion.VERSION_11
+  sourceCompatibility = JavaVersion.VERSION_11
 }
 
 gradlePlugin {
@@ -21,4 +21,3 @@ dependencies {
   api("com.bmuschko:gradle-docker-plugin:7.4.0")
   api(project(":hypertrace-gradle-docker-plugin"))
 }
-
