@@ -63,9 +63,14 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
   }
 
   private void addApplicationExtension(Project project) {
-    this.getHypertraceDockerExtension(project)
-        .getExtensions()
-        .create(EXTENSION_NAME, HypertraceDockerJavaApplication.class, project.getName());
+    HypertraceDockerJavaApplication extension =
+        this.getHypertraceDockerExtension(project)
+            .getExtensions()
+            .create(EXTENSION_NAME, HypertraceDockerJavaApplication.class, project.getName());
+
+    extension.javaVersion.convention(
+        getJavaExtension(project).getToolchain().getLanguageVersion().map(JavaVersion::toVersion)
+            .orElse(JavaVersion.VERSION_11));
   }
 
   private void updateDefaultJvmArgs(Project project, HypertraceDockerJavaApplication javaApplication) {
@@ -233,11 +238,14 @@ public class HypertraceDockerJavaApplicationPlugin implements Plugin<Project> {
   }
 
   private SourceSetOutput mainSourceSetOutput(Project project) {
-    return project.getExtensions()
-                  .getByType(JavaPluginExtension.class)
-                  .getSourceSets()
-                  .getByName(SourceSet.MAIN_SOURCE_SET_NAME)
-                  .getOutput();
+    return getJavaExtension(project)
+        .getSourceSets()
+        .getByName(SourceSet.MAIN_SOURCE_SET_NAME)
+        .getOutput();
+  }
+
+  private JavaPluginExtension getJavaExtension(Project project) {
+    return project.getExtensions().getByType(JavaPluginExtension.class);
   }
 
   private Provider<File> provideIfDirectoryExists(Provider<Directory> directoryProvider) {

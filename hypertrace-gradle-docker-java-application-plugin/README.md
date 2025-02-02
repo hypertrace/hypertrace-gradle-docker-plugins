@@ -14,7 +14,8 @@ default behavior of `com.bmuschko.docker-java-application` for identifying main 
 An application can define multiple variants which allow specifying different base images to use.
 
 - `javaVersion`
-    - JavaVersion 
+    - JavaVersion
+    - Defaults to the toolchain version from the java plugin
 - `baseImage`
     - String
     - Defaults to hypertrace/java:JavaMajorVersion
