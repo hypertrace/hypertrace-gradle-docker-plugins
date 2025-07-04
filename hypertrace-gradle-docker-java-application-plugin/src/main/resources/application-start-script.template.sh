@@ -23,4 +23,20 @@
 
 set -e
 
-exec java ${defaultJvmOpts.substring(1, defaultJvmOpts.length()-1)} \$JAVA_OPTS -classpath '/app/resources:/app/classes:/app/localLibs/*:/app/orgLibs/*:/app/externalLibs/*' ${mainClassName} \$@
+FIPS_CLASSPATH=""
+if [ "\$FIPS_ENABLED" = "true" ]; then
+  FIPS_CLASSPATH="/usr/share/java/bc-fips/*"
+  echo "Adding the additional FIPS libs to the classpath"
+  if [ -z "\$FIPS_JAVA_OPTS" ]; then
+    FIPS_JAVA_OPTS="--add-exports=java.base/sun.security.internal.spec=ALL-UNNAMED \
+      --add-exports=java.base/sun.security.provider=ALL-UNNAMED \
+      -Djava.security.properties==\$JAVA_HOME/conf/security/java.security.fips \
+      -Djavax.net.ssl.trustStore=\$JAVA_HOME/lib/security/cacerts-bcfks  \
+      -Djavax.net.ssl.trustStoreType=BCFKS \
+      -Djavax.net.ssl.trustStorePassword=changeit \
+      -Djavax.net.ssl.trustStoreProvider=BCFIPS"
+    echo "Using default FIPS_JAVA_OPTS"
+  fi
+fi
+
+exec java ${defaultJvmOpts.substring(1, defaultJvmOpts.length()-1)} \$JAVA_OPTS \$FIPS_JAVA_OPTS -classpath "\${FIPS_CLASSPATH}:/app/resources:/app/classes:/app/localLibs/*:/app/orgLibs/*:/app/externalLibs/*" ${mainClassName} \$@
