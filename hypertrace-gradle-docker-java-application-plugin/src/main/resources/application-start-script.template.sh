@@ -29,4 +29,4 @@ if [ "\$FIPS_ENABLED" = "true" ]; then
   echo "Adding the additional FIPS libs to the classpath"
 fi
 
-exec java ${defaultJvmOpts.substring(1, defaultJvmOpts.length()-1)} \$JAVA_OPTS \$FIPS_JAVA_OPTS -classpath "\${CLASSPATH}" ${mainClassName} \$@
+exec java ${defaultJvmOpts.substring(1, defaultJvmOpts.length()-1)} \$JAVA_OPTS \$FIPS_JAVA_OPTS -classpath \${CLASSPATH} ${mainClassName} \$@
