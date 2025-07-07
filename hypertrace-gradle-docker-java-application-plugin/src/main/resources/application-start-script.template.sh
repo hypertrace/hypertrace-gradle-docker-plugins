@@ -23,10 +23,10 @@
 
 set -e
 
-FIPS_CLASSPATH=""
+CLASSPATH="/app/resources:/app/classes:/app/localLibs/*:/app/orgLibs/*:/app/externalLibs/*"
 if [ "\$FIPS_ENABLED" = "true" ]; then
-  FIPS_CLASSPATH="/usr/share/java/bc-fips/*"
+  CLASSPATH="/usr/share/java/bc-fips/*:\${CLASSPATH}"
   echo "Adding the additional FIPS libs to the classpath"
 fi
 
-exec java ${defaultJvmOpts.substring(1, defaultJvmOpts.length()-1)} \$JAVA_OPTS \$FIPS_JAVA_OPTS -classpath "\${FIPS_CLASSPATH}:/app/resources:/app/classes:/app/localLibs/*:/app/orgLibs/*:/app/externalLibs/*" ${mainClassName} \$@
+exec java ${defaultJvmOpts.substring(1, defaultJvmOpts.length()-1)} \$JAVA_OPTS \$FIPS_JAVA_OPTS -classpath "\${CLASSPATH}" ${mainClassName} \$@
