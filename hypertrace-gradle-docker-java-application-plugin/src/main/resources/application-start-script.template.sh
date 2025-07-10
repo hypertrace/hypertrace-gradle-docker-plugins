@@ -28,4 +28,11 @@ FIPS_CLASSPATH="\${FIPS_CLASSPATH%:}"
 # If FIPS_CLASSPATH is not empty, prepend it to classpath with colon as delim
 CLASSPATH="\${FIPS_CLASSPATH:+\${FIPS_CLASSPATH}:}/app/resources:/app/classes:/app/localLibs/*:/app/orgLibs/*:/app/externalLibs/*"
 echo "Using the classpath \$CLASSPATH"
+
+# Check for trust store password file
+if [ ! -z "\$TRUST_STORE_PWD_FILE" ] && [ -f "\$TRUST_STORE_PWD_FILE" ]; then
+    TRUST_STORE_PASSWORD=\$(cat "\$TRUST_STORE_PWD_FILE")
+    JAVA_OPTS="\$JAVA_OPTS -Djavax.net.ssl.trustStorePassword=\$TRUST_STORE_PASSWORD"
+fi
+
 exec java ${defaultJvmOpts.substring(1, defaultJvmOpts.length()-1)} \$JAVA_OPTS \$FIPS_JAVA_OPTS -classpath \${CLASSPATH} ${mainClassName} \$@
